@@ -1,0 +1,4 @@
+*.pdf binary
+*.npz binary
+*.pt binary
+*.pkl binary

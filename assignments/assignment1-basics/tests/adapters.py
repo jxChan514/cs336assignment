@@ -8,6 +8,7 @@ import numpy.typing as npt
 import torch
 from jaxtyping import Bool, Float, Int
 from torch import Tensor
+from cs336_basics.model import Linear,Embedding,RMSNorm,silu,SwiGLU,RotaryPositionalEmbedding
 
 
 def run_linear(
@@ -18,18 +19,22 @@ def run_linear(
 ) -> Float[Tensor, " ... d_out"]:
     """
     Given the weights of a Linear layer, compute the transformation of a batched input.
-
+    
     Args:
         in_dim (int): The size of the input dimension
         out_dim (int): The size of the output dimension
         weights (Float[Tensor, "d_out d_in"]): The linear weights to use
         in_features (Float[Tensor, "... d_in"]): The output tensor to apply the function to
 
+    
     Returns:
         Float[Tensor, "... d_out"]: The transformed output of your linear module.
     """
 
-    raise NotImplementedError
+
+    layer=Linear(d_in,d_out,weights.device,weights.dtype)
+    layer.load_state_dict({"weight":weights})
+    return layer(in_features)
 
 
 def run_embedding(
@@ -50,8 +55,12 @@ def run_embedding(
     Returns:
         Float[Tensor, "... d_model"]: Batch of embeddings returned by your Embedding layer.
     """
-
-    raise NotImplementedError
+    emb_layer = Embedding(num_embeddings=vocab_size, embedding_dim=d_model,device=weights.device,dtype=weights.dtype)
+    # 2. 将外部传入的weights加载到你的embedding_matrix参数
+    emb_layer.load_state_dict({"weight": weights})
+    # 3. 前向推理，返回结果
+    return emb_layer(token_ids)
+    
 
 
 def run_swiglu(
@@ -83,7 +92,9 @@ def run_swiglu(
     # swiglu.w1.weight.data = w1_weight
     # swiglu.w2.weight.data = w2_weight
     # swiglu.w3.weight.data = w3_weight
-    raise NotImplementedError
+    layer=SwiGLU(d_model=d_model,d_ff=d_ff,device=w1_weight.device,dtype=w1_weight.dtype)
+    layer.load_state_dict({"w1.weight":w1_weight,"w2.weight":w2_weight,"w3.weight":w3_weight})
+    return layer(in_features)
 
 
 def run_scaled_dot_product_attention(
@@ -200,8 +211,9 @@ def run_rope(
     Returns:
         Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
     """
-    raise NotImplementedError
-
+    rope=RotaryPositionalEmbedding(theta=theta,d_k=d_k,max_seq_len=max_seq_len,device=in_query_or_key.device)
+    return rope(in_query_or_key,token_positions)
+    
 
 def run_transformer_block(
     d_model: int,
@@ -378,7 +390,10 @@ def run_rmsnorm(
         Float[Tensor,"... d_model"]: Tensor of with the same shape as `in_features` with the output of running
         RMSNorm of the `in_features`.
     """
-    raise NotImplementedError
+
+    layer_norm=RMSNorm(d_model=d_model,eps=eps,device=weights.device,dtype=weights.dtype)
+    layer_norm.load_state_dict({"weight":weights})
+    return layer_norm(in_features)
 
 
 def run_silu(in_features: Float[Tensor, " ..."]) -> Float[Tensor, " ..."]:
@@ -392,7 +407,7 @@ def run_silu(in_features: Float[Tensor, " ..."]) -> Float[Tensor, " ..."]:
         Float[Tensor,"..."]: of with the same shape as `in_features` with the output of applying
         SiLU to each element.
     """
-    raise NotImplementedError
+    return silu(in_features)
 
 
 def run_get_batch(
@@ -559,7 +574,10 @@ def get_tokenizer(
     Returns:
         A BPE tokenizer that uses the provided vocab, merges, and special tokens.
     """
-    raise NotImplementedError
+    # 官方测试通过此入口调用学生实现。
+    from cs336_basics.tokenizer import Tokenizer
+
+    return Tokenizer(vocab=vocab, merges=merges, special_tokens=special_tokens)
 
 
 def run_train_bpe(
@@ -589,4 +607,10 @@ def run_train_bpe(
                 representing that <token1> was merged with <token2>.
                 Merges are ordered by order of creation.
     """
-    raise NotImplementedError
+    from cs336_basics.bpe import train_bpe
+
+    return train_bpe(
+        input_path=input_path,
+        vocab_size=vocab_size,
+        special_tokens=special_tokens,
+    )
