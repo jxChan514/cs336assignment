@@ -116,5 +116,39 @@ def scaled_dot_product_attention(query:torch.Tensor,key:torch.Tensor,value:torch
     scores_softmax=softmax(scores,dim=-1)
     output=scores_softmax@value
     return output
-        
 
+class MultiHeadSelfAttention(nn.Module):
+    def __init__(self, d_model, num_heads, device=None, dtype=None):
+        super().__init__()
+        assert d_model % num_heads == 0
+        self.num_heads = num_heads
+        self.d_head = d_model // num_heads
+        self.q_proj = Linear(d_model, d_model, device=device, dtype=dtype)
+        self.k_proj = Linear(d_model, d_model, device=device, dtype=dtype)
+        self.v_proj = Linear(d_model, d_model, device=device, dtype=dtype)
+        self.output_proj = Linear(d_model, d_model, device=device, dtype=dtype)
+
+    def forward(self, x):
+        # 投影：(..., seq_len, d_model)。省略号代表前面的批次维度。
+        q = self.q_proj(x)
+        k = self.k_proj(x)
+        v = self.v_proj(x)
+
+        # 拆头并交换维度：(..., num_heads, seq_len, d_head)。
+        head_shape = (self.num_heads, self.d_head)
+        q = q.unflatten(-1, head_shape).transpose(-3, -2)
+        k = k.unflatten(-1, head_shape).transpose(-3, -2)
+        v = v.unflatten(-1, head_shape).transpose(-3, -2)
+
+        # 因果 mask：(seq_len, seq_len)，True 表示允许关注自己或之前的位置。
+        seq_len = x.shape[-2]
+        causal_mask = torch.ones(
+            seq_len, seq_len, device=x.device, dtype=torch.bool
+        ).tril()
+
+        # 各头的注意力结果：(..., num_heads, seq_len, d_head)。
+        head_output = scaled_dot_product_attention(q, k, v, mask=causal_mask)
+        # 下一步：合并各头，再经过 output_proj 并返回结果。
+        output=head_output.transpose(-3,-2).flatten(-2)
+        output=self.output_proj(output)
+        return output
