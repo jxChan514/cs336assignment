@@ -2,6 +2,14 @@
 
 本仓库持续更新；仅把实际实现和验证过的内容标为完成。
 
+## 2026-10-03
+
+- 为 `MultiHeadSelfAttention` 接入可选 RoPE，支持传入 token positions，并在省略时生成默认位置。
+- 将 RoPE 的频率缓存设为非持久化 buffer。
+- 新增 `TransformerBlock`，组合 RMSNorm、带 RoPE 的多头注意力、SwiGLU 与残差连接。
+- 接入对应官方测试适配器；新增的 2 项官方测试通过，已有实现回归测试合计：43 passed，2 skipped（macOS / Python 3.12）。
+- 更新 README 和学习进度；完整语言模型、优化器与训练流程仍待实现。
+
 ## 2026-10-02
 
 - 新增 `MultiHeadSelfAttention`：Q/K/V 投影、拆头、因果 mask、合并各头与输出投影。
