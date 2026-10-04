@@ -8,7 +8,7 @@ import numpy.typing as npt
 import torch
 from jaxtyping import Bool, Float, Int
 from torch import Tensor
-from cs336_basics.model import Linear,Embedding,RMSNorm,silu,SwiGLU,RotaryPositionalEmbedding,softmax,scaled_dot_product_attention,MultiHeadSelfAttention,TransformerBlock
+from cs336_basics.model import Linear,Embedding,RMSNorm,silu,SwiGLU,RotaryPositionalEmbedding,softmax,scaled_dot_product_attention,MultiHeadSelfAttention,TransformerBlock,TransformerLM
 
 
 def run_linear(
@@ -388,7 +388,17 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
+    transformerlm=TransformerLM(vocab_size=vocab_size,
+                                context_length=context_length,
+                                d_model=d_model,
+                                d_ff=d_ff,
+                                num_layers=num_layers,
+                                num_heads=num_heads,
+                                rope_theta=rope_theta,
+                                device=in_indices.device,
+                                dtype=weights["token_embeddings.weight"].dtype)
+    transformerlm.load_state_dict(weights)
+    return transformerlm(in_indices)
 
 
 def run_rmsnorm(

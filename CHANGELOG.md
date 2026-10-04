@@ -2,6 +2,13 @@
 
 本仓库持续更新；仅把实际实现和验证过的内容标为完成。
 
+## 2026-10-04
+
+- 新增 `TransformerLM`，组合 token embedding、多层 TransformerBlock、最终 RMSNorm 与语言模型输出投影，返回每个位置的词表 logits。
+- 在官方测试适配器中接入语言模型实现与权重加载。
+- TransformerLM 正常输入与截短输入的 2 项官方测试均通过；`test_model.py` 全部 13 项测试通过，已有实现回归测试合计：45 passed，2 skipped（macOS / Python 3.12）。
+- 更新 README 和学习进度；损失函数、优化器、数据采样、训练与生成流程仍待实现。
+
 ## 2026-10-03
 
 - 为 `MultiHeadSelfAttention` 接入可选 RoPE，支持传入 token positions，并在省略时生成默认位置。

@@ -191,3 +191,23 @@ class TransformerBlock(nn.Module):
         hidden_output=self.ffn(hidden_norm)
         output=hidden_output+hidden_copy
         return output
+class TransformerLM(nn.Module):
+    def __init__(self,vocab_size,
+                 context_length,
+                 d_model,d_ff,
+                 num_layers,
+                 num_heads,
+                 rope_theta,
+                 device=None,dtype=None):
+        super().__init__()
+        self.token_embeddings=Embedding(num_embeddings=vocab_size,embedding_dim=d_model,device=device,dtype=dtype)
+        self.layers=nn.ModuleList([TransformerBlock(d_model=d_model,num_heads=num_heads,d_ff=d_ff,theta=rope_theta,max_seq_len=context_length,device=device,dtype=dtype) for _ in range(num_layers)])
+        self.ln_final=RMSNorm(d_model=d_model,device=device,dtype=dtype)
+        self.lm_head=Linear(in_features=d_model,out_features=vocab_size,device=device,dtype=dtype)
+    def forward(self,x):
+        x=self.token_embeddings(x)
+        for block in self.layers:
+            x=block(x)
+        x_norm=self.ln_final(x)
+        output=self.lm_head(x_norm)
+        return output
