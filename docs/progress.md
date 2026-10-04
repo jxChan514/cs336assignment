@@ -15,14 +15,17 @@
 - [x] 在 Multi-head self-attention 中接入可选 RoPE，官方测试通过。
 - [x] TransformerBlock：RMSNorm、带 RoPE 的注意力、SwiGLU 与残差连接，官方测试通过。
 - [x] 完整 TransformerLM 前向计算：token embedding、多层 TransformerBlock、最终 RMSNorm 与输出投影，正常输入与截短输入的官方测试通过。
-- [ ] Cross-entropy、数据采样、梯度裁剪。
+- [x] Cross-entropy：平均交叉熵损失，官方测试通过，包含大 logits 的数值稳定性检查。
+- [ ] 数据采样、梯度裁剪。
 - [ ] AdamW、学习率调度、checkpoint。
 - [ ] 大型语料 BPE、模型训练、生成与实验报告。
 - [ ] Linux 下官方 tokenizer 内存限制测试。
 
 ## 验证记录
 
-2026-10-04：README 中列出的已实现模块测试在 macOS / Python 3.12 下得到 **45 passed，2 skipped**。本次新增的 TransformerLM 正常输入与截短输入测试均通过，`test_model.py` 的全部 13 项模型测试通过；先前已实现模块的测试全部通过。两项跳过仍为官方在 macOS 上禁用的内存限制测试。
+2026-10-04（第二次同步）：README 中列出的已实现模块测试在 macOS / Python 3.12 下得到 **46 passed，2 skipped**。新增交叉熵的官方测试通过，包含普通 logits 和大 logits 与 PyTorch 结果的一致性检查；先前已实现模块的测试全部通过。两项跳过仍为官方在 macOS 上禁用的内存限制测试。
+
+2026-10-04（第一次同步）：README 中列出的已实现模块测试在 macOS / Python 3.12 下得到 **45 passed，2 skipped**。本次新增的 TransformerLM 正常输入与截短输入测试均通过，`test_model.py` 的全部 13 项模型测试通过；先前已实现模块的测试全部通过。两项跳过仍为官方在 macOS 上禁用的内存限制测试。
 
 2026-10-03：README 中列出的已实现模块测试在 macOS / Python 3.12 下得到 **43 passed，2 skipped**。本次新增的带 RoPE 多头注意力与 TransformerBlock 官方测试均通过；先前已实现模块的测试全部通过。两项跳过仍为官方在 macOS 上禁用的内存限制测试。
 
@@ -32,7 +35,7 @@
 
 2026-10-01（首次发布）：当时已有模块的测试结果为 **37 passed，2 skipped**。
 
-当前模型组件、TransformerBlock 与完整 TransformerLM 前向计算的官方测试均已通过。损失函数、优化器、数据采样、梯度裁剪与 checkpoint 等接口仍待实现，模型训练和生成实验尚未完成。
+当前模型组件、TransformerBlock、完整 TransformerLM 前向计算与交叉熵损失的官方测试均已通过。优化器、数据采样、梯度裁剪与 checkpoint 等接口仍待实现，模型训练和生成实验尚未完成。
 
 ## 后续作业
 
