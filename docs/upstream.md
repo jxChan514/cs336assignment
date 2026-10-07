@@ -14,6 +14,8 @@
 - 新增 `cs336_basics/bpe.py`。
 - 新增 `cs336_basics/tokenizer.py`。
 - 新增 `cs336_basics/model.py`。
+- 新增 `cs336_basics/optimizer.py`。
+- 新增 `cs336_basics/learning_rate_experiment.py`，收录 SGD 学习率比较实验。
 - 修改 `tests/adapters.py`，接入已经实现的模块；未实现入口保留原有占位。
 - 新增 `tests/test_tokenizer_extra.py`。
 
