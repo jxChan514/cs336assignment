@@ -25,10 +25,13 @@
 - [x] TinyStories 样本准备：按完整故事划分数据、训练 BPE、编码并保存 uint16 token 文件。
 - [x] 训练流程：前向与反向计算、梯度裁剪、学习率调度、AdamW 更新、日志、验证与存档。
 - [x] 命令行训练配置与断点恢复：CPU 小样本训练到第 4 步，恢复后继续到第 6 步。
+- [x] 生成模块框架：`sample_next_token` 接口定义、张量形状说明与固定随机种子的调试示例，语法检查通过。
 
 ## 验证记录
 
-2026-10-08：在 macOS / Python 3.12 下运行完整 `pytest -q` 测试集，得到 **51 passed，2 skipped**。新增数据采样与 checkpoint 官方测试均通过；两项跳过是官方在 macOS 上禁用的内存限制测试。
+2026-10-08（第二次同步）：新增 `generation.py` 的接口框架与调试示例，`python -m py_compile cs336_basics/generation.py` 语法检查通过。本次验证范围为文件语法。
+
+2026-10-08（第一次同步）：在 macOS / Python 3.12 下运行完整 `pytest -q` 测试集，得到 **51 passed，2 skipped**。新增数据采样与 checkpoint 官方测试均通过；两项跳过是官方在 macOS 上禁用的内存限制测试。
 
 同日运行 README 中的数据准备与短训练流程：样本包含 5 篇故事，前 4 篇用于训练，最后 1 篇用于验证。训练使用 CPU、float32、batch size 2、context length 32、d_model 64、2 层与 4 个注意力头；warmup 为 1 步，余弦衰减终点为第 6 步。
 

@@ -20,6 +20,7 @@
 - 新增 `cs336_basics/checkpoint.py`，提供模型与优化器状态的保存和加载。
 - 新增 `cs336_basics/prepare_data.py`，准备 TinyStories 调试样本。
 - 新增 `cs336_basics/train.py`，提供训练、验证、命令行配置与断点恢复流程。
+- 新增 `cs336_basics/generation.py`，收录生成模块的接口框架与调试示例。
 - 修改 `tests/adapters.py`，接入已经实现的模块。
 - 新增 `tests/test_tokenizer_extra.py`。
 
