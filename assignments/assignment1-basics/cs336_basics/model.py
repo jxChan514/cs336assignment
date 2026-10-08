@@ -317,13 +317,35 @@ class TransformerLM(nn.Module):
         return output
 
 def cross_entropy(logits,targets):
+    # logits：(B,T,V)，每个预测位置对词表中 V 个候选 token 的评分。
+    # targets：(B,T)，每个位置应当预测出的下一个 token 的 ID。
+    # 也支持 logits：(N,V)、targets：(N,)；下面始终沿最后的词表维度运算。
+
+    # 每个位置取词表中的最大评分：(B,T,V) -> (B,T,1)。
+    # 保留最后一维，便于将这个最大值广播到该位置的全部 V 个评分。
     max_val=torch.max(logits,dim=-1,keepdim=True).values
+    # 每个位置的评分同时减去自己的最大值，形状仍为 (B,T,V)。
+    # 最大评分变成 0，可避免后面的 exp 溢出；softmax 概率保持不变。
     logits=logits-max_val
+
+    # 对平移后的每个评分取指数，仍为 (B,T,V)。
     logits_exp=torch.exp(logits)
+    # 在词表维度求和：(B,T,V) -> (B,T)，得到每个位置的归一化分母。
     logits_sum=torch.sum(logits_exp,dim=-1,keepdim=False)
+    # 分母取自然对数，形状为 (B,T)。
     log_partition=torch.log(logits_sum)
 
+    # (B,T) -> (B,T,1)：每个位置只查找一个正确答案的评分。
     target_indices = targets.unsqueeze(-1)
+    # gather 沿词表维度按 targets 查分数，得到 (B,T,1)。
+    # squeeze(-1) 去掉查找用的单元素维度，得到 (B,T)。
+    # 取出的是减去最大值后的评分，与上面的 log_partition 使用同一套评分。
     target_logits=torch.gather(logits,dim=-1,index=target_indices).squeeze(-1)
+
+    # 每个位置的交叉熵：-log(正确 token 的预测概率)。
+    # loss：(B,T)，其中 loss[b,t] 衡量第 b 条序列、第 t 个位置的预测误差。
     loss=log_partition-target_logits
+    # mean() 不指定维度：对 loss 中全部 B*T 个位置求平均，返回标量，形状为 ()。
+    # 即 sum(loss[b,t]) / (B*T)，同时平均 batch 维和序列维；词表维度已被求和消去。
+    # 例如 B=2、T=32：最终得到这 64 个预测位置的平均 loss，每个位置权重相同。
     return loss.mean()

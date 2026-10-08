@@ -16,7 +16,11 @@
 - 新增 `cs336_basics/model.py`。
 - 新增 `cs336_basics/optimizer.py`。
 - 新增 `cs336_basics/learning_rate_experiment.py`，收录 SGD 学习率比较实验。
-- 修改 `tests/adapters.py`，接入已经实现的模块；未实现入口保留原有占位。
+- 新增 `cs336_basics/data.py`，提供 token 序列采样。
+- 新增 `cs336_basics/checkpoint.py`，提供模型与优化器状态的保存和加载。
+- 新增 `cs336_basics/prepare_data.py`，准备 TinyStories 调试样本。
+- 新增 `cs336_basics/train.py`，提供训练、验证、命令行配置与断点恢复流程。
+- 修改 `tests/adapters.py`，接入已经实现的模块。
 - 新增 `tests/test_tokenizer_extra.py`。
 
 官方测试、测试夹具、作业 PDF、依赖文件及其他上游文件按原样保留。`tests/fixtures/ts_tests/model.pt` 是官方测试夹具，并非本仓库训练得到的模型。其余个人训练数据、环境和运行输出不纳入公开仓库。
