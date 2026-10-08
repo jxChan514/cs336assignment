@@ -2,7 +2,7 @@
 
 Stanford CS336 **Language Modeling from Scratch** 的个人学习实现与实验记录，基于 Spring 2026 作业版本，随学习进度持续更新。
 
-**最近更新：2026-10-08** · 本次新增：生成模块框架，包含 `sample_next_token` 接口定义、输入输出形状说明与固定随机种子的调试示例。
+**最近更新：2026-10-08** · 本次更新：温度采样、top-p 概率筛选与重新归一化，以及生成循环源码和小模型调试入口。
 
 这是个人自学仓库，记录已更新的实现、实验与验证结果。
 
@@ -33,7 +33,8 @@ Stanford CS336 **Language Modeling from Scratch** 的个人学习实现与实验
 | Checkpoint 保存与加载 | 已实现，官方测试通过 | [checkpoint.py](assignments/assignment1-basics/cs336_basics/checkpoint.py) |
 | TinyStories 样本准备 | 已运行，按完整故事划分、训练 BPE 并编码为二进制 token 数据 | [prepare_data.py](assignments/assignment1-basics/cs336_basics/prepare_data.py) |
 | 训练 / 验证 / 断点恢复 | 已实现，小样本 CPU 训练与恢复流程验证通过 | [train.py](assignments/assignment1-basics/cs336_basics/train.py) |
-| 生成模块框架 | 新增接口定义与调试示例，语法检查通过 | [generation.py](assignments/assignment1-basics/cs336_basics/generation.py) |
+| 温度 / top-p 采样 | 已实现，形状、候选筛选、频率与温度检查通过 | [generation.py](assignments/assignment1-basics/cs336_basics/generation.py) |
+| 生成循环源码 | 新增上下文截取、逐步采样、序列拼接与小模型调试入口 | [generation.py](assignments/assignment1-basics/cs336_basics/generation.py) |
 
 Tokenizer 支持特殊 token、UTF-8 编解码、按输入段惰性编码，以及词表和合并规则的 JSON 保存/加载。文件格式与流式分段约定见源码 docstring。
 
@@ -53,6 +54,8 @@ uv run pytest -q
 2026-10-08（第一次同步），在 macOS、Python 3.12 环境运行完整测试集：**51 passed，2 skipped**。其中数据采样与 checkpoint 官方测试通过。两项跳过是官方测试在 macOS 上禁用的内存限制测试。
 
 2026-10-08（第二次同步），新增 `generation.py` 的接口框架与调试示例，使用 `python -m py_compile cs336_basics/generation.py` 完成语法检查。
+
+2026-10-08（第三次同步），温度与 top-p 采样的 4 项独立检查通过：批量输出形状与 token 范围、候选筛选及重新归一化后的采样频率、小 top-p 下的最高概率 token 保留、温度缩放后的采样频率。这些检查针对 `sample_next_token`。已有仓库测试回归结果为 **51 passed，2 skipped**，覆盖 BPE、Tokenizer、模型组件、训练工具、采样数据与存档。
 
 ## 数据准备与训练
 

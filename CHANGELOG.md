@@ -2,6 +2,13 @@
 
 本仓库持续更新，记录每次更新的实现、实验与验证结果。
 
+## 2026-10-08 · 第三次同步
+
+- 实现 `sample_next_token` 的温度缩放、top-p 候选筛选、概率重新归一化、多项式采样与 token ID 映射。
+- 新增 `generate` 循环源码，包含 eval / no_grad、上下文截取、逐 token 采样、序列拼接与 EOS 判断。
+- 扩展调试入口，加入小型 TransformerLM、超出上下文窗口的输入与两步生成调用。
+- 采样函数的 4 项独立检查通过；已有仓库测试回归为 51 passed，2 skipped（macOS / Python 3.12），更新文档并注明检查范围。
+
 ## 2026-10-08 · 第二次同步
 
 - 新增 `generation.py` 生成模块框架，定义 `sample_next_token(next_logits, temperature)` 接口与输入输出张量形状。
