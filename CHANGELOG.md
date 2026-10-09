@@ -2,6 +2,14 @@
 
 本仓库持续更新，记录每次更新的实现、实验与验证结果。
 
+## 2026-10-09
+
+- `generate` 返回生成序列；新增 `generate_text.py`，加载词表和模型 checkpoint 后编码 prompt、采样并解码文本。
+- 数据准备同时保存 vocab / merges JSON，训练接入实验配置、CSV 指标、累计耗时、实验笔记和 loss 曲线。
+- 新增并行正式数据准备、学习率实验、按 token 预算的 batch size 实验与结果汇总脚本，收录 W&B、失稳检测、存档与随机状态恢复等接口。
+- 同步 matplotlib 依赖及 uv.lock，整理五组已记录的学习率实验结果。
+- 回归测试 51 passed、2 skipped；10 个 Python 文件语法与离线锁定检查通过；单条生成、训练恢复、CSV / 曲线、并行数据准备、CPU benchmark 和结果汇总检查通过。验证范围见进度记录。
+
 ## 2026-10-08 · 第三次同步
 
 - 实现 `sample_next_token` 的温度缩放、top-p 候选筛选、概率重新归一化、多项式采样与 token ID 映射。

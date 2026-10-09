@@ -45,6 +45,7 @@ def generate(
             generate_ids=tokens
             if(next_token_id.item()==eos_token_id):
                 break
+    return generate_ids
             
 
 

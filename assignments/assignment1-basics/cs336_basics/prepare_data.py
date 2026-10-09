@@ -66,6 +66,7 @@ valid_ids = tokenizer.encode(valid_text)
 
 train_arr = np.asarray(train_ids, dtype=np.uint16)
 valid_arr=np.asarray(valid_ids,dtype=np.uint16)
+tokenizer.save("data/vocab.json","data/merges.json")
 
 
 # train.py 在 cs336_basics 下，project_root 定位到 assignment1-basics

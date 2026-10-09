@@ -1,4 +1,4 @@
-"""Assignment 1 §5.3：训练、验证，以及 checkpoint 的保存和恢复。"""
+"""Assignment 1 §5.3、§7.1：训练、验证、checkpoint 和实验记录。"""
 
 import argparse
 from pathlib import Path
@@ -13,6 +13,7 @@ if __package__ in (None, ""):
 
 from cs336_basics.checkpoint import load_checkpoint, save_checkpoint
 from cs336_basics.data import get_batch
+from cs336_basics.experiment import ExperimentLogger
 from cs336_basics.model import TransformerLM, cross_entropy
 from cs336_basics.optimizer import AdamW, get_lr_cosine_schedule, gradient_clipping
 
@@ -78,7 +79,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--train-data", type=Path, default=train_data_path)
     parser.add_argument("--valid-data", type=Path, default=valid_data_path)
     parser.add_argument("--data-dtype", choices=("uint16", "uint32"), default=np.dtype(data_dtype).name)
-    parser.add_argument("--output-dir", type=Path, help="覆盖默认 checkpoint 保存目录")
+    parser.add_argument("--output-dir", type=Path, help="实验目录：保存配置、日志、checkpoint 和曲线")
+    parser.add_argument("--experiment-note", default="", help="记录这次实验的目的或参数变更")
     parser.add_argument("--resume", type=Path, default=resume_checkpoint_path, help="从指定 checkpoint 恢复")
     parser.add_argument("--device", default=device)
     parser.add_argument("--seed", type=int, default=seed)
@@ -176,9 +178,16 @@ def main() -> None:
         print(f"已恢复 {args.resume}，已完成 {start_step} 步")
 
     # ---------- 7. 训练、日志、验证和定期保存 ----------
+    experiment = ExperimentLogger(
+        latest_path.parent,
+        configuration={"arguments": vars(args), "model_dtype": str(dtype), "start_step": start_step},
+        start_step=start_step,
+    )
+    print(f"实验指标保存到：{experiment.metrics_path}")
     transformer.train()
     completed_steps = start_step
     for step in range(start_step, args.total_steps):
+        current_valid_loss = None  # 仅在本步执行验证时赋值，其他步写入 CSV 空单元格。
         lr = get_lr_cosine_schedule(
             it=step,
             max_learning_rate=args.max_learning_rate,
@@ -220,8 +229,18 @@ def main() -> None:
                     loss_eval = cross_entropy(eval_logits, targets=eval_targets)
                     total_eval_loss += loss_eval.item()
                 avg_eval_loss = total_eval_loss / args.eval_batches
+                current_valid_loss = avg_eval_loss
                 print(f"完成步数: {completed_steps}，平均验证 loss: {avg_eval_loss:.4f}")
             transformer.train()
+
+        # 每个记录步只写一行；存档步也记录，方便续训时衔接步数和耗时。
+        if (
+            completed_steps % args.log_interval == 0
+            or completed_steps % args.eval_interval == 0
+            or completed_steps % args.save_interval == 0
+            or completed_steps == args.total_steps
+        ):
+            experiment.log(completed_steps, loss.item(), current_valid_loss, lr)
 
         if completed_steps % args.save_interval == 0:
             save_checkpoint(transformer, optimizer, iteration=completed_steps, out=latest_path)
@@ -230,6 +249,12 @@ def main() -> None:
     # ---------- 8. 结束时保存：即使最后一步没到保存间隔，也保留最终状态 ----------
     save_checkpoint(transformer, optimizer, iteration=completed_steps, out=final_path)
     print(f"训练结束，已完成 {completed_steps} 步，最终存档: {final_path}")
+    if experiment.has_records:
+        # 绘图只在训练结束时进行，不影响训练循环中的采样和参数更新。
+        from cs336_basics.plot_metrics import plot_metrics
+
+        for image_path in plot_metrics(experiment.metrics_path):
+            print(f"已保存 loss 曲线：{image_path}")
 
 
 if __name__ == "__main__":

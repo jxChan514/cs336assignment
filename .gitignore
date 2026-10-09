@@ -21,6 +21,7 @@ dist/
 # Training data and generated experiments; official test fixtures are retained
 data/
 outputs/
+experiments/
 checkpoints/
 wandb/
 logs/

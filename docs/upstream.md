@@ -21,7 +21,12 @@
 - 新增 `cs336_basics/prepare_data.py`，准备 TinyStories 调试样本。
 - 新增 `cs336_basics/train.py`，提供训练、验证、命令行配置与断点恢复流程。
 - 新增 `cs336_basics/generation.py`，收录温度 / top-p 采样实现、生成循环源码与调试示例。
+- 新增 `cs336_basics/generate_text.py`，提供 checkpoint 文本生成入口。
+- 新增 `cs336_basics/experiment.py` 与 `plot_metrics.py`，记录配置 / CSV / 笔记并绘制 loss 曲线。
+- 新增 `cs336_basics/prepare_experiment_data.py`，并行准备正式实验数据。
+- 新增 `cs336_basics/run_lr_experiment.py`、`run_batch_experiment.py` 与 `summarize_lr_experiment.py`，运行及汇总模型训练实验。
+- 修改 `pyproject.toml` 与 `uv.lock`，加入 matplotlib 依赖。
 - 修改 `tests/adapters.py`，接入已经实现的模块。
 - 新增 `tests/test_tokenizer_extra.py`。
 
-官方测试、测试夹具、作业 PDF、依赖文件及其他上游文件按原样保留。`tests/fixtures/ts_tests/model.pt` 是官方测试夹具，并非本仓库训练得到的模型。其余个人训练数据、环境和运行输出不纳入公开仓库。
+官方测试、测试夹具、作业 PDF 及其他未列出的上游文件按原样保留。`tests/fixtures/ts_tests/model.pt` 是官方测试夹具，并非本仓库训练得到的模型。其余个人训练数据、环境和运行输出不纳入公开仓库。
