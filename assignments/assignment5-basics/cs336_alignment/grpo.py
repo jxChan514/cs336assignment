@@ -362,8 +362,12 @@ def aggregate_loss_across_microbatch(
             A scalar containing the average loss. Make sure you can later call
             backward on this loss.
     """
-    if loss_normalization != "sequence":
-        raise NotImplementedError("当前阶段仅支持 loss_normalization='sequence'")
+    if loss_normalization not in ("sequence", "constant"):
+        raise ValueError("loss_normalization 必须为 'sequence' 或 'constant'")
+    if loss_normalization == "constant" and (
+        normalization_constant is None or normalization_constant <= 0
+    ):
+        raise ValueError("constant 模式需要正的 normalization_constant")
     if per_token_policy_gradient_loss.ndim != 2 or mask.shape != per_token_policy_gradient_loss.shape:
         raise ValueError("token loss 和 mask 必须具有相同的二维形状 (B, T)")
 
@@ -380,6 +384,8 @@ def aggregate_loss_across_microbatch(
         else masked_loss.dtype
     )
     per_sequence_sum = masked_loss.sum(dim=-1, dtype=sum_dtype)
+    if loss_normalization == "constant":
+        return per_sequence_sum.sum() / normalization_constant
     response_lengths = valid_mask.sum(dim=-1).clamp_min(1)
     per_sequence_mean = per_sequence_sum / response_lengths
     return per_sequence_mean.mean()
@@ -471,13 +477,14 @@ def grpo_train_step(
                 Dict with metadata from the underlying loss call, gradient norm
                 before clipping, and any other statistics you might want to log.
     """
-    if (
-        baseline != "mean"
-        or advantage_normalizer != "std"
-        or importance_reweighting_method != "none"
-        or loss_normalization != "sequence"
+    if importance_reweighting_method != "none":
+        raise NotImplementedError("当前阶段仅支持 on-policy 更新")
+    if loss_normalization not in ("sequence", "constant"):
+        raise ValueError("loss_normalization 必须为 'sequence' 或 'constant'")
+    if loss_normalization == "constant" and (
+        normalization_constant is None or normalization_constant <= 0
     ):
-        raise NotImplementedError("当前阶段仅支持标准 on-policy GRPO（mean/std/none/sequence）")
+        raise ValueError("constant 模式需要正的 normalization_constant")
     batch_size = len(rollout_responses)
     if not (len(repeated_prompts) == len(repeated_ground_truths) == batch_size):
         raise ValueError("提示、回答和标准答案的列表必须等长")
@@ -510,18 +517,30 @@ def grpo_train_step(
     entropy_sum = torch.zeros((), device=device)
     response_token_count = torch.zeros((), device=device, dtype=torch.long)
 
-    for microbatch_index in range(gradient_accumulation_steps):
+    # constant 参数是整轮未剪枝 batch 的固定分母，microbatch 的贡献直接相加。
+    # 删除零 advantage 后仍使用原分母，不能按保留下来的回答数重新归一化。
+    # DDP 暂时保留完整 batch，确保所有 rank 有相同的同步反向传播安排。
+    prune = loss_normalization == "constant" and set_grad_to_none
+    retained = torch.nonzero(advantages != 0, as_tuple=False).flatten().cpu()
+    if prune:
+        nominal_microbatch_size = max(1, (batch_size + gradient_accumulation_steps - 1) // gradient_accumulation_steps)
+        batches = [retained[start:start + nominal_microbatch_size]
+                   for start in range(0, len(retained), nominal_microbatch_size)]
+    else:
+        batches = [torch.arange(index * batch_size // gradient_accumulation_steps,
+                                (index + 1) * batch_size // gradient_accumulation_steps)
+                   for index in range(gradient_accumulation_steps)]
+
+    for microbatch_index, indices in enumerate(batches):
         # 允许不能整除的 batch，按样本数量加权以保持完整 batch 的平均梯度。
-        start = microbatch_index * batch_size // gradient_accumulation_steps
-        end = (microbatch_index + 1) * batch_size // gradient_accumulation_steps
-        input_ids = train_batch["input_ids"][start:end].to(device)
-        labels = train_batch["labels"][start:end].to(device)
-        response_mask = train_batch["response_mask"][start:end].to(device)
+        input_ids = train_batch["input_ids"][indices].to(device)
+        labels = train_batch["labels"][indices].to(device)
+        response_mask = train_batch["response_mask"][indices].to(device)
         # DDP 只在最后一个 microbatch 同步累积梯度；上下文必须包含前向和反向。
         sync_context = (
             model.no_sync()
             if isinstance(model, torch.nn.parallel.DistributedDataParallel)
-            and microbatch_index + 1 < gradient_accumulation_steps
+            and microbatch_index + 1 < len(batches)
             else nullcontext()
         )
         with sync_context:
@@ -529,13 +548,17 @@ def grpo_train_step(
                 model, input_ids, labels, return_token_entropy=True
             )
             per_token_loss, _ = compute_policy_gradient_loss(
-                advantages[start:end], model_outputs["log_probs"],
+                advantages[indices.to(device)], model_outputs["log_probs"],
                 importance_reweighting_method="none",
             )
             microbatch_loss = aggregate_loss_across_microbatch(
-                per_token_loss, response_mask, loss_normalization="sequence"
+                per_token_loss, response_mask, loss_normalization=loss_normalization,
+                normalization_constant=normalization_constant,
             )
-            scaled_loss = microbatch_loss * ((end - start) / batch_size)
+            scaled_loss = microbatch_loss * (
+                1 if loss_normalization == "constant"
+                else len(indices) / batch_size
+            )
             scaled_loss.backward()
         batch_loss = batch_loss + scaled_loss.detach()
         entropy_sum = entropy_sum + torch.where(
@@ -544,6 +567,12 @@ def grpo_train_step(
         response_token_count = response_token_count + response_mask.sum()
         # 释放这一 microbatch 的前向结果，下一轮不保留其计算图。
         del model_outputs, per_token_loss, microbatch_loss, scaled_loss
+
+    if not batches:
+        # 与未剪枝的全零梯度更新一致：Adam 的已有动量仍会继续衰减。
+        for param in model.parameters():
+            if param.requires_grad:
+                param.grad = torch.zeros_like(param)
 
     # 返回值是裁剪前的范数；None 时仅计算范数，不限制梯度大小。
     grad_norm = torch.nn.utils.clip_grad_norm_(
@@ -561,5 +590,7 @@ def grpo_train_step(
         "grad_norm": grad_norm.detach(),
         "token_entropy": (entropy_sum / response_token_count.clamp_min(1)).detach(),
         "response_token_count": response_token_count.detach(),
+        "active_sequence_fraction": len(retained) / batch_size,
+        "backward_microbatches": len(batches),
     }
     return batch_loss.detach(), metadata

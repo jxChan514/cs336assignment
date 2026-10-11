@@ -16,10 +16,11 @@
 | On-policy token loss、sequence loss 汇总、梯度累积与裁剪 | 已实现 | `cs336_alignment/grpo.py` |
 | 标准 on-policy GRPO 训练循环 | 已实现，包含验证、vLLM 权重同步、W&B、回答样例和最终 checkpoint | `scripts/train_grpo.py` |
 | 顺序运行多个种子及八项指标汇总图 | 已实现 | `scripts/run_grpo_seed_sweep.py`、`scripts/plot_grpo_seed_sweep.py` |
-| 固定 loss 归一化、跳过零 advantage 回答、变体训练步 | 待实现 | 第五节后续部分 |
+| 固定 loss 归一化、跳过零 advantage 回答、变体训练步 | 已实现，单训练 GPU 剪枝；DDP 保留同步 batch | `cs336_alignment/grpo.py` |
+| MaxRL、RFT、Dr.GRPO 顺序实验队列 | 已实现，从完成的 seed0 基线复制实验配置 | `scripts/run_grpo_variants.py` |
 | Off-policy、importance weighting、PPO clipping、GSPO | 待实现 | 第六节 |
 
-回答权重函数支持某个变体，不代表该变体的完整训练流程已经完成。当前训练循环仍运行标准 GRPO。完整作业测试中包含待实现部分，因此不能将本分支视为全部作业完成。
+训练循环支持 `--method grpo/grpo_constant/dr_grpo/rft/maxrl`。完整作业测试中仍包含待实现的 off-policy 部分，因此不能将本分支视为全部作业完成。
 
 ## 环境与测试
 
@@ -43,6 +44,8 @@ bash scripts/test_standard_grpo.sh
 ```
 
 2026-10-11：脱敏后的独立目录中运行上述 CPU 测试入口，结果为 **15 passed、10 deselected**，包括九个已完成官方组件测试、两个真实评分器检查、三个训练步集成检查及一个 DDP / ZeRO 检查。未完成部分不计入通过范围。Python / shell 语法与离线依赖锁定检查通过；本次发布未重新启动 GPU 实验。
+
+同日补上固定归一化和完整 on-policy 变体后，CPU 检查为 **20 passed、5 deselected**，包括固定 loss 汇总及四种变体训练步的官方快照；off-policy 测试仍不计入通过范围。
 
 GPU 训练需要 Linux、CUDA、PyTorch、vLLM 与 W&B。`pyproject.toml` 中的 `gpu` extra 描述 GPU 依赖，`plots` extra 包含 W&B；汇总绘图的 matplotlib 单独列在 `requirements-plots.txt`，可运行 `uv pip install --python "$(command -v python)" -r requirements-plots.txt` 安装，保留现有训练依赖锁定文件。GPU / attention backend 兼容性需按设备配置；两卡入口支持 `--attention-implementation sdpa`。单卡交替生成与训练入口保留，但不以两卡验证代替其 GPU 实测。
 
@@ -104,6 +107,22 @@ python scripts/plot_grpo_seed_sweep.py --sweep-dir outputs/grpo-baseline-two-see
 ```
 
 生成八项指标的 PNG / PDF / SVG、各种子曲线、均值及样本标准差、HTML 报告与汇总 JSON。单个已完成种子不绘制标准差带，未完成种子不补造结果。`--upload-wandb` 可将汇总上传至当前登录账号。
+
+## On-policy 变体实验
+
+```bash
+python scripts/run_grpo_variants.py \
+  --baseline-dir outputs/grpo-baseline/seed-0 \
+  --output-dir outputs/onpolicy-variants-seed0
+```
+
+顺序运行 MaxRL、RFT、Dr.GRPO，各 seed0、200 步，复制基线的模型、数据、采样及优化器设置。每组从原始预训练模型独立开始；不续训基线权重，也不运行第二个随机种子。队列使用不同端口，保存配置哈希、日志、状态及 W&B 链接。
+
+三种方法使用固定全局分母 `rollout_batch_size * max_tokens`，单卡训练时为 256 × 512。传入 `grpo_train_step` 的 `normalization_constant` 是完整本地 batch 的分母；各 microbatch 的 token loss 除以该分母后直接相加，不再额外除以梯度累积次数。剪掉零 advantage 回答后分母保持不变。
+
+单训练 GPU 下，变体的 `train/token_entropy` 仅统计实际送入模型的非零 advantage 回答，配置中以 `entropy_scope` 标明；它与基线的全回答训练 entropy 不能直接作为同分布比较。奖励、格式率、长度及验证仍统计完整采样结果。所有方法保留训练和验证回答表、固定样例及训练前后 HTML。
+
+此预算配置只运行三种方法各一个随机种子，尚未运行作业要求的 GRPO_constant 实验或四种子对照。
 
 ## 课程提交形式与排除范围
 

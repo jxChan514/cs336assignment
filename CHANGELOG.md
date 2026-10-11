@@ -2,6 +2,14 @@
 
 本仓库持续更新，记录每次更新的实现、实验与验证结果。
 
+## 2026-10-11 · On-policy 变体与 main 同步
+
+- 将 A5 当前进度纳入 main，默认作业目录直接体现完成范围。
+- 实现固定 token loss 归一化及 GRPO_constant、Dr.GRPO、RFT、MaxRL 的完整 on-policy 更新；单训练 GPU 跳过零 advantage 回答，保持原 batch 的固定分母。
+- 新增从已完成 seed0 基线复制配置的三方法顺序实验队列，记录配置哈希、W&B 链接、指标和回答样例；各方法独立加载原始预训练权重。
+- 变体 CPU 检查 20 passed、5 deselected，MaxRL GPU 前四步更新已验证；剩余实验结果仍待完成。训练 entropy 的统计范围在配置及说明中标明。
+- 笔记、服务器认证信息、个人训练数据、权重和运行产物继续排除。
+
 ## 2026-10-11 · Assignment 5 阶段性同步
 
 - 收录课程结构下的 A5 标准 on-policy GRPO 实现、adapter、官方测试 / 快照、补充集成检查与作业说明。

@@ -1,4 +1,4 @@
-"""Standard on-policy A5 GRPO, with separate or alternating GPUs and W&B examples."""
+"""On-policy A5 RL variants, with separate or alternating GPUs and W&B examples."""
 from __future__ import annotations
 
 import argparse
@@ -21,6 +21,13 @@ from zoneinfo import ZoneInfo
 
 PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT))
+METHODS = {
+    "grpo": ("mean", "std", "sequence"),
+    "grpo_constant": ("mean", "std", "constant"),
+    "dr_grpo": ("mean", "none", "constant"),
+    "rft": ("none", "none", "constant"),
+    "maxrl": ("mean", "mean", "constant"),
+}
 
 
 def write_json(path: Path, value):
@@ -105,6 +112,7 @@ def balanced_examples(records, count):
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", choices=["smoke", "pilot", "standard"], default="pilot")
+    parser.add_argument("--method", choices=list(METHODS), default="grpo")
     parser.add_argument("--model", default=os.environ.get("CS336_A5_MODEL_DIR", str(PROJECT / "models/OLMo-2-0425-1B")))
     data = Path(os.environ.get("CS336_A5_DATA_DIR", str(PROJECT / "data/gsm8k")))
     parser.add_argument("--train-file", type=Path, default=data / "train.jsonl")
@@ -245,6 +253,7 @@ def main():
         def start(self):
             # Fail on an occupied port; never terminate a server belonging to another task.
             with socket.socket() as check:
+                check.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 check.bind((self.host, self.port))
             env = os.environ.copy()
             for key in ("RANK", "LOCAL_RANK", "WORLD_SIZE", "LOCAL_WORLD_SIZE", "GROUP_RANK", "ROLE_RANK", "ROLE_WORLD_SIZE", "MASTER_ADDR", "MASTER_PORT"):
@@ -285,8 +294,14 @@ def main():
                       weight_transfer=("BF16 checkpoint; stop vLLM before training" if single_gpu
                                        else "NCCL, one BF16 tensor at a time"),
                       train_batch_size=args.rollout_batch_size, top_p=1.0,
-                      baseline="mean", advantage_normalizer="std", importance_reweighting_method="none",
-                      loss_normalization="sequence", validation_seed=100000 + args.seed,
+                      baseline=METHODS[args.method][0], advantage_normalizer=METHODS[args.method][1], importance_reweighting_method="none",
+                      loss_normalization=METHODS[args.method][2], validation_seed=100000 + args.seed,
+                      normalization_constant_local_batch=(local_batch_size * args.max_tokens
+                                                         if METHODS[args.method][2] == "constant" else None),
+                      normalization_constant_global=(args.rollout_batch_size * args.max_tokens
+                                                     if METHODS[args.method][2] == "constant" else None),
+                      entropy_scope=("nonzero_advantage_responses" if METHODS[args.method][2] == "constant" and world_size == 1
+                                     else "all_responses"),
                       validation_ids=[r["id"] for r in val_data],
                       prompt_sha256=hashlib.sha256(template.encode()).hexdigest(),
                       script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
@@ -300,7 +315,7 @@ def main():
             config[f"{label}_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
         write_json(output / "config.json", config)
         run = wandb.init(project=args.wandb_project, entity=args.wandb_entity, mode=args.wandb_mode,
-                         group=args.wandb_group, name=f"{args.profile}-{args.prompt}-seed{args.seed}-{output.name}",
+                         group=args.wandb_group, name=f"{args.method}-{args.profile}-{args.prompt}-seed{args.seed}-{output.name}",
                          config=config, dir=str(output))
         run.define_metric("rollout_step")
         for namespace in ["train", "val", "system", "debug"]:
@@ -491,7 +506,11 @@ def main():
                     model, tokenizer, optimizer, accumulation, args.max_grad_norm,
                     lambda response, truth: scores[(response, truth)],
                     [r["prompt"] for r in local_records], [r["response"] for r in local_records],
-                    [r["ground_truth"] for r in local_records], args.group_size)
+                    [r["ground_truth"] for r in local_records], args.group_size,
+                    baseline=METHODS[args.method][0], advantage_normalizer=METHODS[args.method][1],
+                    loss_normalization=METHODS[args.method][2],
+                    normalization_constant=(local_batch_size * args.max_tokens
+                                            if METHODS[args.method][2] == "constant" else None))
             torch.cuda.synchronize(device)
             update_norm = (policy.get_output_embeddings().weight.detach().flatten()[:4096] - probe).norm()
             entropy_count = metadata["response_token_count"].float()
@@ -504,6 +523,8 @@ def main():
                 train_stats = summarize_records(records, args.group_size)
                 payload = {f"train/{key}": value for key, value in train_stats.items()}
                 payload.update({"rollout_step": step, "train/loss": values[0] / world_size,
+                                "train/active_sequence_fraction": metadata["active_sequence_fraction"],
+                                "train/backward_microbatches": metadata["backward_microbatches"],
                                 "train/grad_norm": values[1] / world_size, "train/token_entropy": values[2] / max(values[3], 1),
                                 "debug/output_weight_update_norm": values[4] / world_size,
                                 "system/mean_training_peak_gib": values[5] / world_size,
