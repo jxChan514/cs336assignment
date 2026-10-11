@@ -30,3 +30,12 @@
 - 新增 `tests/test_tokenizer_extra.py`。
 
 官方测试、测试夹具、作业 PDF 及其他未列出的上游文件按原样保留。`tests/fixtures/ts_tests/model.pt` 是官方测试夹具，并非本仓库训练得到的模型。其余个人训练数据、环境和运行输出不纳入公开仓库。
+
+## Assignment 5 来源
+
+- 上游：[stanford-cs336/assignment5-alignment](https://github.com/stanford-cs336/assignment5-alignment)。
+- 起始版本：[c2734a26308710949fe13226960a1e8cece94b7e](https://github.com/stanford-cs336/assignment5-alignment/commit/c2734a26308710949fe13226960a1e8cece94b7e)。
+- 本仓库目录：`assignments/assignment5-basics/`，内容对应 Spring 2026 Alignment / Reasoning RL。
+- 新增 GRPO 实现、prompting / 训练 / 汇总入口、CPU 集成检查与使用说明；adapter 连接已完成部分。
+- 保留官方测试、快照、小模型测试夹具、辅助代码、提示模板、作业 PDF、官方更新日志及 AI 指导文件；依赖声明与锁定文件按运行环境调整，课程提交脚本增加私人文件与生成产物的排除项。
+- 未收录学习笔记、私人编辑器设置、服务器连接配置、认证信息、训练数据、个人模型及实验运行输出。

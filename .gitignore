@@ -17,6 +17,10 @@ dist/
 !.env.example
 *.pem
 *.key
+.netrc
+*.code-workspace
+notes/
+.obsidian/
 
 # Training data and generated experiments; official test fixtures are retained
 data/

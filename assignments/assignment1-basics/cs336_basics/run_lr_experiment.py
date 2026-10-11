@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument("--eval-batches", type=int, default=20)
     parser.add_argument("--save-interval", type=int, default=1000)
     parser.add_argument("--wandb-mode", choices=("online", "offline", "disabled"), default="online")
-    parser.add_argument("--wandb-entity", default="mrxian123456-ca-si-a")
+    parser.add_argument("--wandb-entity", help="W&B entity; defaults to the authenticated account")
     parser.add_argument("--wandb-project", default="cs336-assignment1")
     parser.add_argument("--wandb-group", default="tinystories-lr-20261009")
     parser.add_argument("--run-name")

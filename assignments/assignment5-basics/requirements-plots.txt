@@ -1,0 +1,2 @@
+# Optional aggregate plotting dependency; preserves the validated training lock.
+matplotlib>=3.10.0,<4

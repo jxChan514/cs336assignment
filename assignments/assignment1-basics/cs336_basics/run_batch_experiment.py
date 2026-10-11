@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument("--save-interval", type=int, help="覆盖 save-every-tokens")
     parser.add_argument("--resume", type=Path, help="本脚本保存的存档包含采样随机状态，可继续训练")
     parser.add_argument("--wandb-mode", choices=("online", "offline", "disabled"), default="online")
-    parser.add_argument("--wandb-entity", default="mrxian123456-ca-si-a")
+    parser.add_argument("--wandb-entity", help="W&B entity; defaults to the authenticated account")
     parser.add_argument("--wandb-project", default="cs336-assignment1")
     parser.add_argument("--wandb-group", default="tinystories-batch-20261009")
     parser.add_argument("--run-name")
