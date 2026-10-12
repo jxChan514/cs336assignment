@@ -2,7 +2,7 @@
 
 Stanford CS336 **Language Modeling from Scratch** 的个人学习实现与实验记录，基于 Spring 2026 作业版本，随学习进度持续更新。
 
-**最近更新：2026-10-11** · 本次更新：A5 prompting、完整 on-policy 变体训练、W&B 样例与实验队列；公开配置已去除私人服务器路径与账号默认值。
+**最近更新：2026-10-12** · 本次更新：A5 实际采样 token 轨迹训练、两卡 seed0 配置及脱敏训练曲线。
 
 这是个人自学仓库，记录已更新的实现、实验与验证结果。
 
@@ -13,9 +13,9 @@ Stanford CS336 **Language Modeling from Scratch** 的个人学习实现与实验
 | [A1 · Basics](assignments/assignment1-basics/) | 已更新 | BPE、Tokenizer、TransformerLM、交叉熵、AdamW、学习率调度、梯度裁剪、数据准备与采样、训练与验证、checkpoint、SGD 学习率实验 |
 | [A5 · Alignment / Reasoning RL](assignments/assignment5-basics/) | 部分完成 | Prompting、标准 GRPO 与 GRPO_constant / Dr.GRPO / RFT / MaxRL 的 on-policy 训练、固定归一化、零 advantage 剪枝、W&B 与样例、实验队列；off-policy 待实现 |
 
-A5 保留课程起始代码、`tests/adapters.py`、官方测试、依赖文件与 `test_and_make_submission.sh` 形式。运行说明与完成范围见 [A5 README](assignments/assignment5-basics/README.md)。本次仅同步源码和测试资源，学习笔记与个人训练产物不纳入仓库。
+A5 保留课程起始代码、`tests/adapters.py`、官方测试、依赖文件与 `test_and_make_submission.sh` 形式。运行说明与完成范围见 [A5 README](assignments/assignment5-basics/README.md)。本次同步源码、测试、可移植训练配置和脱敏指标曲线；学习笔记、原始回答与个人模型权重不纳入仓库。
 
-`main` 中各作业目录直接记录当前实现进度；实现完成与实验完成分别说明。A5 已完成的 on-policy 部分通过 20 项检查，off-policy 的 5 项测试未计入通过范围。
+`main` 中各作业目录直接记录当前实现进度；实现完成与实验完成分别说明。A5 已完成的 on-policy 部分通过 24 项检查，off-policy 的 5 项测试未计入通过范围。
 
 ## Assignment 1
 

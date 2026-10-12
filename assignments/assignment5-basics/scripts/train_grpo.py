@@ -296,6 +296,8 @@ def main():
                       train_batch_size=args.rollout_batch_size, top_p=1.0,
                       baseline=METHODS[args.method][0], advantage_normalizer=METHODS[args.method][1], importance_reweighting_method="none",
                       loss_normalization=METHODS[args.method][2], validation_seed=100000 + args.seed,
+                      trajectory_token_source="vllm_token_ids", prompt_input_type="token_ids",
+                      retokenize_sampled_responses=False,
                       normalization_constant_local_batch=(local_batch_size * args.max_tokens
                                                          if METHODS[args.method][2] == "constant" else None),
                       normalization_constant_global=(args.rollout_batch_size * args.max_tokens
@@ -388,11 +390,12 @@ def main():
                 return []
             subset = examples[start:end]
             prompts = [template.format(question=e["question"]) for e in subset]
+            prompt_ids = [tokenizer.encode(prompt, add_special_tokens=False) for prompt in prompts]
             params = {"temperature": args.temperature, "max_tokens": args.max_tokens, "n": group_size,
                       "seed": seed + index}
             if args.prompt != "question_only":
                 params.update(stop=["</answer>"], include_stop_str_in_output=True)
-            completions = servers[index].generate_completions(prompts, params, batch_size=args.request_batch_size)
+            completions = servers[index].generate_completions(prompt_ids, params, batch_size=args.request_batch_size)
             if len(completions) != len(subset) * group_size:
                 raise RuntimeError("vLLM returned the wrong number of completions")
             result = []
@@ -403,6 +406,8 @@ def main():
                         raise RuntimeError("Missing generated token IDs; response lengths would be invalid")
                     result.append({**example, "sample_index": sample_index,
                                    "prompt": prompts[example_index], "response": completion.text,
+                                   "prompt_token_ids": prompt_ids[example_index],
+                                   "response_token_ids": completion.token_ids,
                                    "response_tokens": len(completion.token_ids), "finish_reason": completion.finish_reason,
                                    "rewards": grader(completion.text, example["ground_truth"])})
             return result
@@ -510,7 +515,9 @@ def main():
                     baseline=METHODS[args.method][0], advantage_normalizer=METHODS[args.method][1],
                     loss_normalization=METHODS[args.method][2],
                     normalization_constant=(local_batch_size * args.max_tokens
-                                            if METHODS[args.method][2] == "constant" else None))
+                                            if METHODS[args.method][2] == "constant" else None),
+                    prompt_token_ids=[r["prompt_token_ids"] for r in local_records],
+                    response_token_ids=[r["response_token_ids"] for r in local_records])
             torch.cuda.synchronize(device)
             update_norm = (policy.get_output_embeddings().weight.detach().flatten()[:4096] - probe).norm()
             entropy_count = metadata["response_token_count"].float()
@@ -525,6 +532,8 @@ def main():
                 payload.update({"rollout_step": step, "train/loss": values[0] / world_size,
                                 "train/active_sequence_fraction": metadata["active_sequence_fraction"],
                                 "train/backward_microbatches": metadata["backward_microbatches"],
+                                "debug/sampled_token_ids_used": int(metadata["sampled_token_ids_used"]),
+                                "debug/trajectory_response_token_count": metadata["trajectory_response_token_count"],
                                 "train/grad_norm": values[1] / world_size, "train/token_entropy": values[2] / max(values[3], 1),
                                 "debug/output_weight_update_norm": values[4] / world_size,
                                 "system/mean_training_peak_gib": values[5] / world_size,

@@ -1,4 +1,4 @@
-"""Run three independent seed-0 on-policy variants against a completed baseline."""
+"""Run independent seed-0 on-policy methods using a completed baseline's settings."""
 from __future__ import annotations
 
 import argparse
@@ -22,7 +22,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--methods", nargs="+", choices=list(METHODS), default=["maxrl", "rft", "dr_grpo"])
+    parser.add_argument("--port-base", type=int, default=18140)
     args = parser.parse_args()
+    if len(set(args.methods)) != len(args.methods):
+        parser.error("Methods must be unique")
+    if args.port_base < 1024 or args.port_base + 20 * (len(args.methods) - 1) > 65535:
+        parser.error("Method ports must be within 1024–65535")
     baseline = args.baseline_dir.resolve()
     config = json.loads((baseline / "config.json").read_text())
     baseline_done = json.loads((baseline / "completed.json").read_text())
@@ -44,12 +50,13 @@ def main():
     with (root.parent / ".a5-grpo-variants.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         root.mkdir(exist_ok=False)
-        methods = ["maxrl", "rft", "dr_grpo"]
+        methods = args.methods
         state = {"status": "starting", "pid": os.getpid(), "methods": methods,
                  "seed": 0, "steps_per_method": 200, "baseline_dir": str(baseline),
                  "baseline_result": baseline_done, "runs": [], "started_at_unix": time.time(),
-                 "budget_scope": "one seed each; GRPO_constant is not scheduled"}
+                 "budget_scope": "one seed per selected method; 200 updates each"}
         tracked = [PROJECT / "scripts/train_grpo.py", PROJECT / "cs336_alignment/grpo.py",
+                   PROJECT / "cs336_alignment/vllm_utils.py",
                    PROJECT / "scripts/run_grpo_two_gpu.sh", Path(__file__).resolve(),
                    PROJECT / "cs336_alignment/prompts/r1_zero.prompt"]
         hashes = {str(p.relative_to(PROJECT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in tracked}
@@ -89,7 +96,7 @@ def main():
                         raise RuntimeError(f"Source changed during queue: {path}")
                 output = root / f"{method}-seed0"
                 command = ["bash", str(PROJECT / "scripts/run_grpo_two_gpu.sh"), "standard",
-                           "--method", method, "--port", str(18140 + index * 20),
+                           "--method", method, "--port", str(args.port_base + index * 20),
                            "--wandb-group", root.name, "--output-dir", str(output)]
                 for key in copied_args:
                     if config.get(key) is not None:

@@ -74,7 +74,7 @@ class VLLMServer:
 
     def generate_completions(
         self,
-        prompts: list[str],
+        prompts: list[str] | list[list[int]],
         sampling_params: dict,
         batch_size: int | None = None,
     ) -> list[VLLMCompletion]:
@@ -180,7 +180,7 @@ def stop_server(process: subprocess.Popen | None, timeout: int = 30) -> None:
 def generate_completions(
     vllm_base_url: str,
     model_id: str,
-    prompts: list[str],
+    prompts: list[str] | list[list[int]],
     sampling_params: dict,
     batch_size: int | None = None,
 ) -> list[VLLMCompletion]:

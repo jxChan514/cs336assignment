@@ -18,6 +18,7 @@
 | 顺序运行多个种子及八项指标汇总图 | 已实现 | `scripts/run_grpo_seed_sweep.py`、`scripts/plot_grpo_seed_sweep.py` |
 | 固定 loss 归一化、跳过零 advantage 回答、变体训练步 | 已实现，单训练 GPU 剪枝；DDP 保留同步 batch | `cs336_alignment/grpo.py` |
 | MaxRL、RFT、Dr.GRPO 顺序实验队列 | 已实现，从完成的 seed0 基线复制实验配置 | `scripts/run_grpo_variants.py` |
+| 实际采样 token 轨迹训练、标签一致性检查 | 已实现，保留采样 IDs；字符串接口用于课程 adapter | `cs336_alignment/grpo.py`、`scripts/train_grpo.py` |
 | Off-policy、importance weighting、PPO clipping、GSPO | 待实现 | 第六节 |
 
 训练循环支持 `--method grpo/grpo_constant/dr_grpo/rft/maxrl`。完整作业测试中仍包含待实现的 off-policy 部分，因此不能将本分支视为全部作业完成。
@@ -46,6 +47,8 @@ bash scripts/test_standard_grpo.sh
 2026-10-11：脱敏后的独立目录中运行上述 CPU 测试入口，结果为 **15 passed、10 deselected**，包括九个已完成官方组件测试、两个真实评分器检查、三个训练步集成检查及一个 DDP / ZeRO 检查。未完成部分不计入通过范围。Python / shell 语法与离线依赖锁定检查通过；本次发布未重新启动 GPU 实验。
 
 同日补上固定归一化和完整 on-policy 变体后，CPU 检查为 **20 passed、5 deselected**，包括固定 loss 汇总及四种变体训练步的官方快照；off-policy 测试仍不计入通过范围。
+
+2026-10-12：补上实际采样轨迹路径后，CPU 检查为 **24 passed、5 deselected**。新增检查覆盖重复 token 保留、EOS 与 padding 掩码、GRPO / RFT 实际动作目标的参数更新一致性，以及不完整轨迹输入的拒绝。
 
 GPU 训练需要 Linux、CUDA、PyTorch、vLLM 与 W&B。`pyproject.toml` 中的 `gpu` extra 描述 GPU 依赖，`plots` extra 包含 W&B；汇总绘图的 matplotlib 单独列在 `requirements-plots.txt`，可运行 `uv pip install --python "$(command -v python)" -r requirements-plots.txt` 安装，保留现有训练依赖锁定文件。GPU / attention backend 兼容性需按设备配置；两卡入口支持 `--attention-implementation sdpa`。单卡交替生成与训练入口保留，但不以两卡验证代替其 GPU 实测。
 
@@ -94,6 +97,8 @@ python scripts/run_grpo_seed_sweep.py --seeds 0 1 \
 
 两卡配置中，microbatch 8 对应 32 次梯度累积，最后只调用一次 optimizer.step。训练使用 FP32 主参数及 AdamW 状态、BF16 autocast 与 gradient checkpointing；生成使用 BF16 vLLM。四卡 DDP / ZeRO 入口为 `scripts/run_grpo_3090.sh`。自定义 NCCL 动态库仅在显式设置 `VLLM_NCCL_SO_PATH` 时加载。
 
+真实训练入口将 prompt 以 token IDs 发送给 vLLM，保存返回的完整回答 IDs，并直接据此构建训练 labels 和 response_mask；每次更新前逐条校验回答标签。文字仍用于奖励判分及样例展示。配置记录 `trajectory_token_source`，W&B 记录 `debug/sampled_token_ids_used` 和完整轨迹的回答 token 数。
+
 作业完整基线要求四个随机种子，可显式指定 `--seeds 0 1 2 3`；本分支默认队列为两个种子，不代表已满足四种子的要求。每个种子都从原始预训练模型开始，脚本验证跨种子源代码一致。输出目录已有配置时拒绝覆盖。
 
 W&B 记录 loss、裁剪前梯度范数、token entropy、训练及验证奖励/格式率、验证回答长度，还包括截断率、运行时间与显存。真正的更新计数为 `rollout_step`；W&B 默认 `_step` 包含多次日志写入，可能超过训练步数。
@@ -108,6 +113,23 @@ python scripts/plot_grpo_seed_sweep.py --sweep-dir outputs/grpo-baseline-two-see
 
 生成八项指标的 PNG / PDF / SVG、各种子曲线、均值及样本标准差、HTML 报告与汇总 JSON。单个已完成种子不绘制标准差带，未完成种子不补造结果。`--upload-wandb` 可将汇总上传至当前登录账号。
 
+## 两卡 seed0 配置
+
+同一机器的 GPU 0 训练、GPU 1 生成；模型和数据路径沿用上面的环境变量。配置入口显式保存本次 200 次更新的训练与采样参数：
+
+```bash
+bash configs/grpo_rft_seed0.sh grpo
+bash configs/grpo_rft_seed0.sh rft
+```
+
+分别从原始预训练模型开始。可追加 `--output-dir`、`--port`、`--wandb-mode` 等参数覆盖默认值。运行前准备资源及登录 W&B；配置脚本不包含服务器连接或账号信息。
+
+## W&B 训练曲线
+
+[GRPO / RFT seed0 曲线](figures/grpo_rft_seed0_curves.png) · [SVG](figures/grpo_rft_seed0_curves.svg)。曲线使用 W&B 导出的未平滑数值，横轴为 `rollout_step`。对应数值保存在 `figures/grpo_seed0_metrics.csv` 和 `figures/rft_seed0_metrics.csv`；空值表示该步未记录该指标，未补值或插值。
+
+loss 的定义随方法变化；GRPO 的训练 entropy 统计全部回答，RFT 统计非零 advantage 回答。两组均为 seed0，验证每 10 次更新一次。
+
 ## On-policy 变体实验
 
 ```bash
@@ -117,6 +139,8 @@ python scripts/run_grpo_variants.py \
 ```
 
 顺序运行 MaxRL、RFT、Dr.GRPO，各 seed0、200 步，复制基线的模型、数据、采样及优化器设置。每组从原始预训练模型独立开始；不续训基线权重，也不运行第二个随机种子。队列使用不同端口，保存配置哈希、日志、状态及 W&B 链接。
+
+可用 `--methods grpo rft --port-base 18340` 只运行 GRPO 与 RFT，仍从原始预训练模型各自开始。指定新的输出目录，避免覆盖已有实验。
 
 三种方法使用固定全局分母 `rollout_batch_size * max_tokens`，单卡训练时为 256 × 512。传入 `grpo_train_step` 的 `normalization_constant` 是完整本地 batch 的分母；各 microbatch 的 token loss 除以该分母后直接相加，不再额外除以梯度累积次数。剪掉零 advantage 回答后分母保持不变。
 
@@ -128,7 +152,7 @@ python scripts/run_grpo_variants.py \
 
 保留课程 `test_and_make_submission.sh`，从作业目录运行会执行 GRPO 测试并生成 `code.zip`。当前仍有待实现测试，脚本按课程原版设计在测试失败后继续打包；生成 zip 不表示完整测试通过。
 
-GitHub 中保留官方测试所需的两份小型 GPT-2 模型夹具；它们来自课程起始仓库，属于测试资源。个人训练权重、GSM8K 数据、生成回答、W&B 文件、日志、环境、编辑器私人配置、认证文件与学习笔记均不上传。提交 zip 另按课程规则排除模型夹具和数据，并增加私人配置与运行输出的排除项。
+GitHub 中保留官方测试所需的两份小型 GPT-2 模型夹具；它们来自课程起始仓库，属于测试资源。仅公开训练代码、可移植配置和脱敏后的 W&B 指标曲线。个人训练权重、GSM8K 数据、生成回答、原始 W&B 文件、日志、环境、编辑器私人配置、认证文件与学习笔记均不上传。提交 zip 另按课程规则排除模型夹具和数据，并增加私人配置与运行输出的排除项。
 
 ## 来源与修改范围
 

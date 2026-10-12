@@ -57,18 +57,38 @@ Returns:
     if tokenizer.pad_token_id is None:
         raise ValueError("tokenizer 必须设置 pad_token_id")
 
-    batch_size = len(prompt_strs)
-    all_concat_ids = []
-    all_response_pos = []  # 回答在完整序列中的起始位置
-    for p_str, o_str in zip(prompt_strs, output_strs):
-        p_id = tokenizer(p_str, add_special_tokens=False)["input_ids"]
-        o_id = tokenizer(o_str, add_special_tokens=False)["input_ids"]
-        all_concat_ids.append(p_id + o_id)
-        all_response_pos.append(len(p_id))
+    return pack_prompt_and_response_ids(
+        [tokenizer(text, add_special_tokens=False)["input_ids"] for text in prompt_strs],
+        [tokenizer(text, add_special_tokens=False)["input_ids"] for text in output_strs],
+        tokenizer.pad_token_id,
+    )
+
+
+def pack_prompt_and_response_ids(
+    prompt_token_ids: list[list[int]],
+    response_token_ids: list[list[int]],
+    pad_token_id: int,
+) -> dict[str, Tensor]:
+    """Pad actual token trajectories and align next-token labels and masks.
+
+    Unlike the assignment's text-tokenization interface, this path never
+    decodes or re-encodes sampled actions. EOS IDs remain valid response labels,
+    even when the same ID is used for padding.
+    """
+    if len(prompt_token_ids) != len(response_token_ids):
+        raise ValueError("Prompt and response token batches must have equal lengths")
+    if not isinstance(pad_token_id, int) or isinstance(pad_token_id, bool) or pad_token_id < 0:
+        raise ValueError("pad_token_id must be a nonnegative integer")
+    for sequence in prompt_token_ids + response_token_ids:
+        if any(not isinstance(token, int) or isinstance(token, bool) or token < 0 for token in sequence):
+            raise ValueError("Token IDs must be nonnegative integers")
+    batch_size = len(prompt_token_ids)
+    all_concat_ids = [prompt + response for prompt, response in zip(prompt_token_ids, response_token_ids)]
+    all_response_pos = [len(prompt) for prompt in prompt_token_ids]
 
     max_length = max((len(ids) for ids in all_concat_ids), default=0)
     padded_ids = torch.full(
-        (batch_size, max_length), tokenizer.pad_token_id, dtype=torch.long
+        (batch_size, max_length), pad_token_id, dtype=torch.long
     )
     full_response_mask = torch.zeros((batch_size, max_length), dtype=torch.bool)
     for i, (ids, response_start) in enumerate(zip(all_concat_ids, all_response_pos)):
@@ -410,6 +430,8 @@ def grpo_train_step(
     cliprange: float | None = None,
     loss_normalization: Literal["sequence", "constant"] = "sequence",
     normalization_constant: int | None = None,
+    prompt_token_ids: list[list[int]] | None = None,
+    response_token_ids: list[list[int]] | None = None,
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor | float]]:
     """Execute forward-and-backward passes, with gradient_accumulation_steps
     microbatches.
@@ -467,6 +489,10 @@ def grpo_train_step(
         normalization_constant: int | None = None
             The constant to divide total loss by; required if
             loss_normalization = "constant".
+        prompt_token_ids, response_token_ids:
+            Optional paired actual sampling trajectories. Supply both for real
+            rollouts; strings are still used for rewards. When omitted, retain
+            the course's text-tokenization interface for adapter tests.
 
     Returns:
         tuple[torch.Tensor, dict[str, torch.Tensor]].
@@ -506,7 +532,22 @@ def grpo_train_step(
     advantages, group_metadata = compute_group_normalized_rewards(
         raw_rewards, group_size, baseline, advantage_eps, advantage_normalizer
     )
-    train_batch = tokenize_prompt_and_output(repeated_prompts, rollout_responses, tokenizer)
+    if (prompt_token_ids is None) != (response_token_ids is None):
+        raise ValueError("Supply both prompt_token_ids and response_token_ids")
+    sampled_ids_used = response_token_ids is not None
+    if sampled_ids_used:
+        if len(prompt_token_ids) != batch_size or len(response_token_ids) != batch_size:
+            raise ValueError("Sampled token batches must match the rollout batch")
+        if any(not ids for ids in prompt_token_ids) or any(not ids for ids in response_token_ids):
+            raise ValueError("Sampled prompts and responses must contain tokens")
+        train_batch = pack_prompt_and_response_ids(prompt_token_ids, response_token_ids, tokenizer.pad_token_id)
+        # Catch any shift/padding error before performing a parameter update.
+        for index, ids in enumerate(response_token_ids):
+            actual_labels = train_batch["labels"][index][train_batch["response_mask"][index]]
+            if not torch.equal(actual_labels, torch.tensor(ids, dtype=torch.long)):
+                raise RuntimeError("Training response labels differ from sampled actions")
+    else:
+        train_batch = tokenize_prompt_and_output(repeated_prompts, rollout_responses, tokenizer)
     advantages = advantages.to(device)
 
     model.train()
@@ -592,5 +633,7 @@ def grpo_train_step(
         "response_token_count": response_token_count.detach(),
         "active_sequence_fraction": len(retained) / batch_size,
         "backward_microbatches": len(batches),
+        "sampled_token_ids_used": sampled_ids_used,
+        "trajectory_response_token_count": int(train_batch["response_mask"].sum()),
     }
     return batch_loss.detach(), metadata

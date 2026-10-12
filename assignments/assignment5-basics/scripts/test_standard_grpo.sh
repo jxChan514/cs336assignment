@@ -14,6 +14,6 @@ export CUDA_VISIBLE_DEVICES=""
 export PYTHONPATH="${test_deps:+$test_deps:}$project_dir${PYTHONPATH:+:$PYTHONPATH}"
 cd "$project_dir"
 exec python -m pytest \
-  tests/test_grpo.py tests/test_rollout_rewards_smoke.py tests/test_grpo_train_step_sanity.py tests/test_grpo_distributed.py \
+  tests/test_grpo.py tests/test_rollout_rewards_smoke.py tests/test_grpo_train_step_sanity.py tests/test_grpo_distributed.py tests/test_sampled_trajectories.py \
   -k 'not off_policy' \
     -q --tb=short "$@"
