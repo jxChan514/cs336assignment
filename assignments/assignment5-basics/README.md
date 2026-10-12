@@ -2,6 +2,8 @@
 
 代码基于 Stanford 的 [Assignment 5 起始仓库](https://github.com/stanford-cs336/assignment5-alignment)，保留 `cs336_alignment/`、`tests/adapters.py`、官方测试、测试夹具、依赖文件及提交脚本的结构。本仓库沿用 `assignments/assignment5-basics/` 作为目录名；对应作业为 Alignment / Reasoning RL。
 
+使用预训练的 **OLMo-2-0425-1B**，在 **GSM8K** 上实现并运行 on-policy 数学推理强化学习。当前已完成 GRPO 与 RFT 各一个 seed0、200 次训练更新；训练代码、可移植配置和脱敏指标曲线保存在本目录。
+
 作业说明：[主作业 PDF](cs336_spring2026_assignment5_alignment.pdf)。[Safety / RLHF 补充作业](cs336_spring2026_assignment5_supplement_safety_rlhf.pdf)为可选内容，当前未实现。
 
 ## 当前完成范围
@@ -17,11 +19,12 @@
 | 标准 on-policy GRPO 训练循环 | 已实现，包含验证、vLLM 权重同步、W&B、回答样例和最终 checkpoint | `scripts/train_grpo.py` |
 | 顺序运行多个种子及八项指标汇总图 | 已实现 | `scripts/run_grpo_seed_sweep.py`、`scripts/plot_grpo_seed_sweep.py` |
 | 固定 loss 归一化、跳过零 advantage 回答、变体训练步 | 已实现，单训练 GPU 剪枝；DDP 保留同步 batch | `cs336_alignment/grpo.py` |
-| MaxRL、RFT、Dr.GRPO 顺序实验队列 | 已实现，从完成的 seed0 基线复制实验配置 | `scripts/run_grpo_variants.py` |
+| 可选择方法的顺序实验队列 | 已实现，从已完成基线复制配置，支持 `--methods` | `scripts/run_grpo_variants.py` |
+| GRPO / RFT 两卡 seed0 配置与曲线 | 各完成 200 次更新，公开脱敏曲线 | `configs/grpo_rft_seed0.sh`、`figures/` |
 | 实际采样 token 轨迹训练、标签一致性检查 | 已实现，保留采样 IDs；字符串接口用于课程 adapter | `cs336_alignment/grpo.py`、`scripts/train_grpo.py` |
 | Off-policy、importance weighting、PPO clipping、GSPO | 待实现 | 第六节 |
 
-训练循环支持 `--method grpo/grpo_constant/dr_grpo/rft/maxrl`。完整作业测试中仍包含待实现的 off-policy 部分，因此不能将本分支视为全部作业完成。
+训练循环支持 `--method grpo/grpo_constant/dr_grpo/rft/maxrl`。完整作业测试中仍包含待实现的 off-policy 部分，因此本目录仍为部分完成状态。
 
 ## 环境与测试
 
@@ -44,11 +47,7 @@ export CS336_A5_TEST_DEPS="$PWD/.test-deps"
 bash scripts/test_standard_grpo.sh
 ```
 
-2026-10-11：脱敏后的独立目录中运行上述 CPU 测试入口，结果为 **15 passed、10 deselected**，包括九个已完成官方组件测试、两个真实评分器检查、三个训练步集成检查及一个 DDP / ZeRO 检查。未完成部分不计入通过范围。Python / shell 语法与离线依赖锁定检查通过；本次发布未重新启动 GPU 实验。
-
-同日补上固定归一化和完整 on-policy 变体后，CPU 检查为 **20 passed、5 deselected**，包括固定 loss 汇总及四种变体训练步的官方快照；off-policy 测试仍不计入通过范围。
-
-2026-10-12：补上实际采样轨迹路径后，CPU 检查为 **24 passed、5 deselected**。新增检查覆盖重复 token 保留、EOS 与 padding 掩码、GRPO / RFT 实际动作目标的参数更新一致性，以及不完整轨迹输入的拒绝。
+最近一次检查（2026-10-12）：**24 passed、5 deselected**。通过范围包括已完成的官方 on-policy 组件、奖励评分、训练步集成、固定 loss 归一化及变体快照、DDP / ZeRO，以及实际采样 token 轨迹的补充检查；五项未完成的 off-policy 测试未纳入此入口。轨迹检查覆盖重复 token 保留、EOS 与 padding 掩码、GRPO / RFT 实际动作目标的参数更新一致性及不完整轨迹输入的拒绝。
 
 GPU 训练需要 Linux、CUDA、PyTorch、vLLM 与 W&B。`pyproject.toml` 中的 `gpu` extra 描述 GPU 依赖，`plots` extra 包含 W&B；汇总绘图的 matplotlib 单独列在 `requirements-plots.txt`，可运行 `uv pip install --python "$(command -v python)" -r requirements-plots.txt` 安装，保留现有训练依赖锁定文件。GPU / attention backend 兼容性需按设备配置；两卡入口支持 `--attention-implementation sdpa`。单卡交替生成与训练入口保留，但不以两卡验证代替其 GPU 实测。
 
@@ -78,20 +77,26 @@ python scripts/evaluate_a5_prompting.py \
 
 脚本保存配置哈希、逐题回答、三类评分结果、正确率、格式率、输出长度、结束原因及供人工审查的样例。`--limit` 只用于短流程检查；完整评测要求 1319 道 GSM8K test 题。`--test-file` 支持指定数据位置。
 
-## 标准 GRPO 训练
+## 两卡快速开始
+
+在作业目录内准备好模型、GSM8K 文件和 GPU 训练环境后，先检查短流程，再运行正式配置：
 
 ```bash
-# 同一机器：GPU 0 训练，GPU 1 生成。
+source ./activate.sh
+wandb login
+
+# 2 次更新；GPU 0 训练，GPU 1 生成。
 bash scripts/run_grpo_two_gpu.sh smoke --rollout-batch-size 8 \
   --val-examples 8 --attention-implementation sdpa --no-save-model
 
-bash scripts/run_grpo_two_gpu.sh pilot --seed 0 --microbatch-size 8 \
-  --attention-implementation sdpa
-
-# 顺序运行两个种子，每个 200 个 rollout 更新。
-python scripts/run_grpo_seed_sweep.py --seeds 0 1 \
-  --output-dir outputs/grpo-baseline-two-seeds
+# 从原始预训练模型分别运行 GRPO 或 RFT。
+bash configs/grpo_rft_seed0.sh grpo
+bash configs/grpo_rft_seed0.sh rft
 ```
+
+正式配置各运行 200 次更新；两条命令应顺序执行，默认输出目录分别为 `outputs/grpo-seed0` 和 `outputs/rft-seed0`。可追加 `--output-dir`、`--port`、`--wandb-mode offline` 等参数；运行前按自己的 GPU 显存调整 microbatch、上下文与 vLLM 显存比例。默认配置不覆盖已有运行目录。
+
+## 训练参数与记录
 
 `smoke` 为 2 步，`pilot` 为 50 步，`standard` 为 200 步。正式配置使用 6400 道训练题、1024 道固定验证题，每轮 32 道题 × 每题 8 条回答，共 256 条回答；学习率 1e-5、AdamW betas (0.9, 0.95)、weight decay 0、梯度裁剪 1、temperature 1、max new tokens 512。每 10 步验证，每 40 步保存训练回答样例。
 
@@ -99,7 +104,7 @@ python scripts/run_grpo_seed_sweep.py --seeds 0 1 \
 
 真实训练入口将 prompt 以 token IDs 发送给 vLLM，保存返回的完整回答 IDs，并直接据此构建训练 labels 和 response_mask；每次更新前逐条校验回答标签。文字仍用于奖励判分及样例展示。配置记录 `trajectory_token_source`，W&B 记录 `debug/sampled_token_ids_used` 和完整轨迹的回答 token 数。
 
-作业完整基线要求四个随机种子，可显式指定 `--seeds 0 1 2 3`；本分支默认队列为两个种子，不代表已满足四种子的要求。每个种子都从原始预训练模型开始，脚本验证跨种子源代码一致。输出目录已有配置时拒绝覆盖。
+作业完整基线要求四个随机种子。`scripts/run_grpo_seed_sweep.py` 支持 `--seeds 0 1 2 3`；当前公开的 GRPO / RFT 曲线各只有 seed0。每个种子都从原始预训练模型开始，队列检查跨种子源代码一致性。
 
 W&B 记录 loss、裁剪前梯度范数、token entropy、训练及验证奖励/格式率、验证回答长度，还包括截断率、运行时间与显存。真正的更新计数为 `rollout_step`；W&B 默认 `_step` 包含多次日志写入，可能超过训练步数。
 
@@ -113,20 +118,11 @@ python scripts/plot_grpo_seed_sweep.py --sweep-dir outputs/grpo-baseline-two-see
 
 生成八项指标的 PNG / PDF / SVG、各种子曲线、均值及样本标准差、HTML 报告与汇总 JSON。单个已完成种子不绘制标准差带，未完成种子不补造结果。`--upload-wandb` 可将汇总上传至当前登录账号。
 
-## 两卡 seed0 配置
-
-同一机器的 GPU 0 训练、GPU 1 生成；模型和数据路径沿用上面的环境变量。配置入口显式保存本次 200 次更新的训练与采样参数：
-
-```bash
-bash configs/grpo_rft_seed0.sh grpo
-bash configs/grpo_rft_seed0.sh rft
-```
-
-分别从原始预训练模型开始。可追加 `--output-dir`、`--port`、`--wandb-mode` 等参数覆盖默认值。运行前准备资源及登录 W&B；配置脚本不包含服务器连接或账号信息。
-
 ## W&B 训练曲线
 
-[GRPO / RFT seed0 曲线](figures/grpo_rft_seed0_curves.png) · [SVG](figures/grpo_rft_seed0_curves.svg)。曲线使用 W&B 导出的未平滑数值，横轴为 `rollout_step`。对应数值保存在 `figures/grpo_seed0_metrics.csv` 和 `figures/rft_seed0_metrics.csv`；空值表示该步未记录该指标，未补值或插值。
+![GRPO 与 RFT 的 seed0 训练曲线](figures/grpo_rft_seed0_curves.png)
+
+[PNG](figures/grpo_rft_seed0_curves.png) · [SVG](figures/grpo_rft_seed0_curves.svg) · [GRPO 数值](figures/grpo_seed0_metrics.csv) · [RFT 数值](figures/rft_seed0_metrics.csv)。曲线使用 W&B 导出的未平滑数值，横轴为 `rollout_step`；各包含 200 次训练更新及 step0 到 step200 的 21 次验证。CSV 空值表示该步未记录该指标，未补值或插值。
 
 loss 的定义随方法变化；GRPO 的训练 entropy 统计全部回答，RFT 统计非零 advantage 回答。两组均为 seed0，验证每 10 次更新一次。
 
@@ -146,7 +142,7 @@ python scripts/run_grpo_variants.py \
 
 单训练 GPU 下，变体的 `train/token_entropy` 仅统计实际送入模型的非零 advantage 回答，配置中以 `entropy_scope` 标明；它与基线的全回答训练 entropy 不能直接作为同分布比较。奖励、格式率、长度及验证仍统计完整采样结果。所有方法保留训练和验证回答表、固定样例及训练前后 HTML。
 
-此预算配置只运行三种方法各一个随机种子，尚未运行作业要求的 GRPO_constant 实验或四种子对照。
+当前公开并核对的训练曲线为 GRPO / RFT 各一个 seed0；其他方法提供实现与运行入口。尚未完成作业要求的 GRPO_constant 实验、四种子基线和第六节 off-policy 部分。
 
 ## 课程提交形式与排除范围
 
