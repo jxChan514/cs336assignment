@@ -25,7 +25,8 @@ notes/
 # Training data and generated experiments; official test fixtures are retained
 data/
 outputs/
-experiments/
+experiments/*
+!experiments/assignment5/
 checkpoints/
 wandb/
 logs/

@@ -1,0 +1,11 @@
+{
+  "cloud_required": true,
+  "user_override": "W&B must actually record the experiment; offline-only is not sufficient",
+  "run_id": "mjupyenu",
+  "url": "https://wandb.ai/mrxian123456-ca-si-a/cs336-a5-grpo/runs/mjupyenu",
+  "transport": "online bridge publishing real source metrics, retaining offline trainer safety events",
+  "credentials": "existing source authentication only; relay does not terminate TLS or log headers/bodies",
+  "training_restarted": false,
+  "finish_gate": "cloud final receipt VERIFIED before terminal logs manifest is generated",
+  "publication_note": "Historical run finished and its complete cloud history was verified. Transport-specific process IDs and local SSH mappings are omitted."
+}

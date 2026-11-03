@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "created_date": "2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "server": {
+    "resource": "2 x NVIDIA A800 80GB PCIe",
+    "remote_root": "/root/autodl-tmp/cs336-a5-20261029"
+  },
+  "phase": "formal suite recovery after GRPO rollout91 OOM; single-seed scope preserved",
+  "baseline": {
+    "name": "3shot_baseline",
+    "train": false,
+    "val_examples": 1024,
+    "n": 1,
+    "eval_seed": 100000,
+    "metrics": [
+      "reward",
+      "format_reward",
+      "response_length",
+      "truncation_fraction"
+    ],
+    "save_raw_responses": true
+  },
+  "common": {
+    "model": "allenai/OLMo-2-0425-1B",
+    "dataset": "GSM8K",
+    "train_examples": 6400,
+    "val_examples": 1024,
+    "data_subset_seed": 42,
+    "prompt": "r1_zero_three_shot_gsm8k",
+    "reward_fn": "r1_zero_reward_fn",
+    "reward": "binary format-and-answer reward; no format-only bonus",
+    "seeds": [
+      0
+    ],
+    "rollout_steps": 200,
+    "rollout_batch_size": 256,
+    "group_size": 8,
+    "learning_rate": 1e-05,
+    "optimizer": "AdamW",
+    "adam_betas": [
+      0.9,
+      0.95
+    ],
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "max_new_tokens": 512,
+    "stop": [
+      "</answer>"
+    ],
+    "include_stop_str_in_output": true,
+    "eval_every_rollouts": 10,
+    "rollout_log_every_rollouts": 40,
+    "eval_n": 1,
+    "eval_seed": 100000,
+    "initial_weights": "same original pretrained model, independent reset for each method and seed",
+    "constant_normalization": "original training response count * max_new_tokens; filtering zero-advantage samples must not change denominator",
+    "trajectory_tokens": "prefer actual sampled token IDs; verify HF/vLLM trajectory alignment",
+    "wandb_entity": "mrxian123456-ca-si-a",
+    "wandb_project": "cs336-a5-grpo",
+    "wall_time_reporting": true
+  },
+  "pilot": {
+    "name": "grpo_pilot50",
+    "seed": 0,
+    "steps": 50,
+    "purpose": "diagnostic before formal runs; independent formal reset unless a complete resume is validated"
+  },
+  "methods_in_order": [
+    {
+      "name": "grpo",
+      "section": "4.3",
+      "baseline": "mean",
+      "advantage_normalizer": "std",
+      "loss_normalization": "sequence",
+      "importance_reweighting_method": "none",
+      "train_batch_size": 256,
+      "gradient_accumulation_steps": 32,
+      "optimizer_updates_per_rollout": 1
+    },
+    {
+      "name": "grpo_constant",
+      "section": "5.4",
+      "baseline": "mean",
+      "advantage_normalizer": "std",
+      "loss_normalization": "constant",
+      "importance_reweighting_method": "none",
+      "train_batch_size": 256,
+      "gradient_accumulation_steps": 32,
+      "optimizer_updates_per_rollout": 1
+    },
+    {
+      "name": "dr_grpo",
+      "section": "5.4",
+      "baseline": "mean",
+      "advantage_normalizer": "none",
+      "loss_normalization": "constant",
+      "importance_reweighting_method": "none",
+      "train_batch_size": 256,
+      "gradient_accumulation_steps": 32,
+      "optimizer_updates_per_rollout": 1
+    },
+    {
+      "name": "rft",
+      "section": "5.4",
+      "baseline": "none",
+      "advantage_normalizer": "none",
+      "loss_normalization": "constant",
+      "importance_reweighting_method": "none",
+      "train_batch_size": 256,
+      "gradient_accumulation_steps": 32,
+      "optimizer_updates_per_rollout": 1
+    },
+    {
+      "name": "maxrl",
+      "section": "5.4",
+      "baseline": "mean",
+      "advantage_normalizer": "mean",
+      "loss_normalization": "constant",
+      "importance_reweighting_method": "none",
+      "train_batch_size": 256,
+      "gradient_accumulation_steps": 32,
+      "optimizer_updates_per_rollout": 1
+    },
+    {
+      "name": "offpolicy_naive",
+      "section": "6.4",
+      "baseline": "mean",
+      "advantage_normalizer": "std",
+      "loss_normalization": "sequence",
+      "importance_reweighting_method": "none",
+      "cliprange": null,
+      "train_batch_size": 8,
+      "gradient_accumulation_steps": 1,
+      "optimizer_updates_per_rollout": 32,
+      "old_log_probs": "computed before first optimizer update; detached and fixed across the complete rollout",
+      "advantages": "computed on original prompt groups before response permutation; fixed within rollout",
+      "response_use": "each sampled response used once"
+    },
+    {
+      "name": "offpolicy_noclip",
+      "section": "6.4",
+      "baseline": "mean",
+      "advantage_normalizer": "std",
+      "loss_normalization": "sequence",
+      "importance_reweighting_method": "noclip",
+      "cliprange": null,
+      "train_batch_size": 8,
+      "gradient_accumulation_steps": 1,
+      "optimizer_updates_per_rollout": 32,
+      "old_log_probs": "computed before first optimizer update; detached and fixed across the complete rollout",
+      "advantages": "computed on original prompt groups before response permutation; fixed within rollout",
+      "response_use": "each sampled response used once"
+    },
+    {
+      "name": "offpolicy_clip",
+      "section": "6.4",
+      "baseline": "mean",
+      "advantage_normalizer": "std",
+      "loss_normalization": "sequence",
+      "importance_reweighting_method": "grpo",
+      "cliprange": 0.2,
+      "train_batch_size": 8,
+      "gradient_accumulation_steps": 1,
+      "optimizer_updates_per_rollout": 32,
+      "old_log_probs": "computed before first optimizer update; detached and fixed across the complete rollout",
+      "advantages": "computed on original prompt groups before response permutation; fixed within rollout",
+      "response_use": "each sampled response used once"
+    },
+    {
+      "name": "offpolicy_gspo",
+      "section": "6.4",
+      "baseline": "mean",
+      "advantage_normalizer": "std",
+      "loss_normalization": "sequence",
+      "importance_reweighting_method": "gspo",
+      "cliprange": 0.0003,
+      "train_batch_size": 8,
+      "gradient_accumulation_steps": 1,
+      "optimizer_updates_per_rollout": 32,
+      "old_log_probs": "computed before first optimizer update; detached and fixed across the complete rollout",
+      "advantages": "computed on original prompt groups before response permutation; fixed within rollout",
+      "response_use": "each sampled response used once"
+    },
+    {
+      "name": "soft_maxrl",
+      "section": "7",
+      "baseline": "mean",
+      "advantage_normalizer": "power of group mean",
+      "advantage_alpha": 0.5,
+      "advantage_formula": "(r - group_mean) / (group_mean + 1e-6)**0.5",
+      "loss_normalization": "constant",
+      "importance_reweighting_method": "none",
+      "train_batch_size": 256,
+      "gradient_accumulation_steps": 32,
+      "optimizer_updates_per_rollout": 1,
+      "comparators": [
+        "dr_grpo",
+        "maxrl"
+      ],
+      "user_selected": true
+    }
+  ],
+  "formal_training_run_count": 10,
+  "explicitly_skipped": [
+    "learning_rate_sweep",
+    "prompt_ablation",
+    "zero_shot_baseline",
+    "CISPO_optional_extension"
+  ],
+  "prelaunch_verification": [
+    "original component tests",
+    "manual loss and gradient comparisons including soft_maxrl endpoints alpha=0/1",
+    "full-batch vs accumulated gradient equivalence",
+    "actual sampled token and response-mask alignment",
+    "HF-to-vLLM weight sync and post-update generation",
+    "real rollout nonzero reward/gradient/weight change",
+    "online W&B upload and API readback"
+  ],
+  "artifact_policy": "Published snapshot excludes credentials, raw data, outputs, and weights. Original experiments retained source weights and archived logs only on servers.",
+  "revision": 3,
+  "scope_revision": {
+    "reason": "User explicitly requested one run per method, not four",
+    "formal_seeds": [
+      0
+    ],
+    "formal_runs": 10,
+    "date": "2026-10-29"
+  },
+  "recovery_revision": {
+    "on_policy_microbatch_size": 8,
+    "gradient_accumulation_steps": 32,
+    "backbone_gradient_checkpointing": true,
+    "failed_attempt_preserved": true,
+    "restart_from_original_weights": true
+  }
+}

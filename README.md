@@ -2,7 +2,7 @@
 
 Stanford CS336 **Language Modeling from Scratch** 的个人学习实现与实验记录，基于 Spring 2026 作业版本，随学习进度持续更新。
 
-**最近更新：2026-10-12** · A1 基础组件与训练工具；A5 on-policy 推理强化学习、两卡训练配置及 W&B 曲线。
+**最近更新：2026-11-03** · 发布 A5 实际实验使用的 RL 变体、DAPO 与 GKD 风格 OPD 算法和训练源码，见 [Assignment 5 实验源码](experiments/assignment5/)。
 
 这是个人自学仓库，记录已更新的实现、实验与验证结果。
 
@@ -11,11 +11,11 @@ Stanford CS336 **Language Modeling from Scratch** 的个人学习实现与实验
 | 作业 | 状态 | 当前内容 |
 | --- | --- | --- |
 | [A1 · Basics](assignments/assignment1-basics/) | 已更新 | BPE、Tokenizer、TransformerLM、交叉熵、AdamW、学习率调度、梯度裁剪、数据准备与采样、训练与验证、checkpoint、SGD 学习率实验 |
-| [A5 · Alignment / Reasoning RL](assignments/assignment5-basics/) | 部分完成 | Prompting、GRPO / GRPO_constant / Dr.GRPO / RFT / MaxRL 的 on-policy 实现；GRPO 与 RFT 各完成 seed0 的 200 次更新；off-policy 待实现 |
+| [A5 · Alignment / Reasoning RL](assignments/assignment5-basics/) | 持续更新 | 课程目录保留原学习版本；[正式实验源码](experiments/assignment5/)包括 on-policy 变体、四种 off-policy 方法、软化 MaxRL，以及独立的 DAPO / OPD 补充实验 |
 
 A5 保留课程起始代码、`tests/adapters.py`、官方测试、依赖文件与 `test_and_make_submission.sh` 形式。运行说明与完成范围见 [A5 README](assignments/assignment5-basics/README.md)。本次同步源码、测试、可移植训练配置和脱敏指标曲线；学习笔记、原始回答与个人模型权重不纳入仓库。
 
-`main` 中各作业目录直接记录当前实现进度；实现完成与实验完成分别说明。A5 已完成的 on-policy 部分通过 24 项检查，off-policy 的 5 项测试未计入通过范围。
+实现完成与实验完成分别说明。A5 课程目录的历史 on-policy 部分通过 24 项检查；后续正式实验的 off-policy、DAPO 与 OPD 源码及独立数值测试见 `experiments/assignment5/`。源码存在不表示每个方法均完成了目标训练预算，提前停止的实验需单列。
 
 ## Assignment 5 · 数学推理强化学习
 
@@ -24,11 +24,12 @@ A5 保留课程起始代码、`tests/adapters.py`、官方测试、依赖文件�
 | 入口 | 用途 |
 | --- | --- |
 | [A5 README](assignments/assignment5-basics/README.md) | 完成范围、环境、资源配置与运行方法 |
+| [RL / DAPO / OPD 正式源码](experiments/assignment5/README.md) | 实际实验算法、完整训练循环、固定 3-shot 配置、验证与检查点、CPU 测试 |
 | [训练脚本](assignments/assignment5-basics/scripts/train_grpo.py) | on-policy GRPO 与变体训练 |
 | [两卡 seed0 配置](assignments/assignment5-basics/configs/grpo_rft_seed0.sh) | GPU 0 训练、GPU 1 生成，GRPO / RFT 各 200 次更新 |
 | [W&B 曲线](assignments/assignment5-basics/figures/grpo_rft_seed0_curves.png) | 奖励、loss、梯度范数、entropy、回答长度、格式率和截断率 |
 
-已完成的 GRPO / RFT 实验各只有一个训练种子；公开曲线来自未平滑的 W&B 导出数据。课程要求的四种子基线、GRPO_constant 实验和第六节 off-policy 部分尚未完成。
+已公开的 GRPO / RFT 历史曲线来自未平滑的 W&B 导出数据。后续固定 3-shot 实验每个方法仅运行 seed0，部分方法提前停止；DAPO 完成 200 轮采样 / 800 次更新，OPD 完成 800 次更新。它们不构成课程要求的四种子结果，也不是等监督与等算力的算法消融。
 
 ## Assignment 1
 
@@ -137,6 +138,11 @@ assignments/assignment5-basics/
 docs/
   progress.md        # 已更新模块与验证记录
   upstream.md        # 官方来源、版本与修改范围
+experiments/assignment5/
+  rl_variants/       # GRPO 家族、RFT、off-policy 与软化 MaxRL 正式源码
+  dapo/              # 动态采样、非对称裁剪与 token 级归一化
+  gkd_opd/           # 冻结教师与完整词表 reverse KL 蒸馏
+  SOURCE_MANIFEST.json # 发布文件与服务器代码归档的 SHA-256 对照
 CHANGELOG.md         # 仓库更新记录
 ```
 

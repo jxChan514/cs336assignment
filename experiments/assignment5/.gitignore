@@ -1,0 +1,13 @@
+# Generated artifacts are never part of the source snapshots.
+preflight/
+monitoring/
+models/
+best-model/
+final-model/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.jsonl
+*.json.gz
+*.log

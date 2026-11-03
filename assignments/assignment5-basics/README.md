@@ -1,5 +1,7 @@
 # CS336 Spring 2026 Assignment 5: Alignment
 
+**2026-11-03：** 后续固定 3-shot 实验使用的 RL 变体（含 off-policy / GSPO / 软化 MaxRL）、DAPO 与 GKD 风格 OPD 的正式源码已发布到 [experiments/assignment5](../../experiments/assignment5/)。该目录与本作业的学习版本独立，包含实际训练循环、数值测试、配置和代码哈希。下文的完成范围与曲线描述的是 2026-10-12 的课程目录版本，不能当作后续独立实验的完成情况。
+
 代码基于 Stanford 的 [Assignment 5 起始仓库](https://github.com/stanford-cs336/assignment5-alignment)，保留 `cs336_alignment/`、`tests/adapters.py`、官方测试、测试夹具、依赖文件及提交脚本的结构。本仓库沿用 `assignments/assignment5-basics/` 作为目录名；对应作业为 Alignment / Reasoning RL。
 
 使用预训练的 **OLMo-2-0425-1B**，在 **GSM8K** 上实现并运行 on-policy 数学推理强化学习。当前已完成 GRPO 与 RFT 各一个 seed0、200 次训练更新；训练代码、可移植配置和脱敏指标曲线保存在本目录。

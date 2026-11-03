@@ -1,0 +1,309 @@
+{
+  "scope": "algorithm, training, evaluation, checkpoint, and verification source only; no raw experiment outputs or weights",
+  "files": [
+    {
+      "path": "rl_variants/code/common.py",
+      "sha256": "2c90e7910d6b9d1055e077dfa5405b9e6517e87153785162da8e5dfd5c70738b",
+      "source_archive": "a5-3shot-20261029/code/common.py"
+    },
+    {
+      "path": "rl_variants/code/server.py",
+      "sha256": "5fbc7f97df7144a98c77347591e12c21b2a705e8c56496e45f5b35b83a26707f",
+      "source_archive": "a5-3shot-20261029/code/server.py"
+    },
+    {
+      "path": "rl_variants/code/runtime_env.sh",
+      "sha256": "4aa63503cbf5512ae9fac30bd8bf670559b7bb4ddc056670bd0c714209e63a1c",
+      "source_archive": "a5-3shot-20261029/code/runtime_env.sh"
+    },
+    {
+      "path": "rl_variants/code/prompt.prompt",
+      "sha256": "91788d4fb0e8d81ec17066dc122572f02a6d2ec3ed762174c7b70fcf5fdf6193",
+      "source_archive": "a5-3shot-20261029/code/prompt.prompt"
+    },
+    {
+      "path": "rl_variants/code/reference/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_archive": "a5-3shot-20261029/code/reference/__init__.py"
+    },
+    {
+      "path": "rl_variants/code/reference/grpo.py",
+      "sha256": "38211217a984cd33fb4095b7758ec11abfafa62b876657a3da9a21d599f77e83",
+      "source_archive": "a5-3shot-20261029/code/reference/grpo.py"
+    },
+    {
+      "path": "rl_variants/code/reference/vllm_utils.py",
+      "sha256": "139bbf8de71279ac6cdfebe4b2cc7a708f29eb40ec50ad936f06ed05846c2ca1",
+      "source_archive": "a5-3shot-20261029/code/reference/vllm_utils.py"
+    },
+    {
+      "path": "rl_variants/code/reference/drgrpo_grader.py",
+      "sha256": "f88b29b0e76b3c28f969cb8b2f945e01b70aed2753306445d30822a192c54ec7",
+      "source_archive": "a5-3shot-20261029/code/reference/drgrpo_grader.py"
+    },
+    {
+      "path": "rl_variants/code/train.py",
+      "sha256": "2a9dd02eb85568c56f6fd64abe07bbe3e6092a9814041f2867e08a1930b52ae6",
+      "source_archive": "a5-3shot-20261029/code/train.py"
+    },
+    {
+      "path": "rl_variants/code/objectives.py",
+      "sha256": "ccab690eec0809a3ba193bc203a0b656e3021f1f2fb24b9959b20283e1fd3e19",
+      "source_archive": "a5-3shot-20261029/code/objectives.py"
+    },
+    {
+      "path": "rl_variants/code/losses.py",
+      "sha256": "42e1892bc0e4ea8203dcae7a6f8ebb825e0b9ecf875ee48f253ebd8328c70ab9",
+      "source_archive": "a5-3shot-20261029/code/losses.py"
+    },
+    {
+      "path": "rl_variants/code/scoring.py",
+      "sha256": "f22fdf79dc77503f6c9562fa026dc14c454358bd3e71a8d4b63f56d706b18dbb",
+      "source_archive": "a5-3shot-20261029/code/scoring.py"
+    },
+    {
+      "path": "rl_variants/code/baseline.py",
+      "sha256": "878fb69aee1c06fa1fb0fd87ebe882b344b54a15b4a069e6a6dc1de6570b4f16",
+      "source_archive": "a5-3shot-20261029/code/baseline.py"
+    },
+    {
+      "path": "rl_variants/code/run_suite.py",
+      "sha256": "c2117cf00ade2daa111d9514b72937c144f9b01efb01282582f2d04674db4793",
+      "source_archive": "a5-3shot-20261029/code/run_suite.py"
+    },
+    {
+      "path": "rl_variants/code/aggregate.py",
+      "sha256": "19faa0cc07f2905413d475b235f4305f1d0c87493e8365966abb34a7de0261b4",
+      "source_archive": "a5-3shot-20261029/code/aggregate.py"
+    },
+    {
+      "path": "rl_variants/code/test_objectives.py",
+      "sha256": "992ea697937448f8899f82715c99a0e0c5fe06684aff694a7153b13af9e0d68a",
+      "source_archive": "a5-3shot-20261029/code/test_objectives.py"
+    },
+    {
+      "path": "rl_variants/code/test_scoring.py",
+      "sha256": "c51ac3f14c30dbbe0023de199074282e825dcdeceaef7215e52bedad4c686545",
+      "source_archive": "a5-3shot-20261029/code/test_scoring.py"
+    },
+    {
+      "path": "rl_variants/protocol.json",
+      "source_archive": "a5-3shot-20261029/protocol.json",
+      "source_sha256": "1937d2ab76264d454bf7c219e3f1b8311fd705c4a3243f3dcc4692041da31818",
+      "sha256": "a42f8cbcb27af421a6b30a5efa7549d717684489ed4906933ecbac8475443661",
+      "export_changes": "Private deployment coordinates or obsolete artifact-transfer wording omitted; algorithm settings unchanged."
+    },
+    {
+      "path": "dapo/code/common.py",
+      "sha256": "2c90e7910d6b9d1055e077dfa5405b9e6517e87153785162da8e5dfd5c70738b",
+      "source_archive": "a5-dapo-20261030/code/common.py"
+    },
+    {
+      "path": "dapo/code/server.py",
+      "sha256": "5fbc7f97df7144a98c77347591e12c21b2a705e8c56496e45f5b35b83a26707f",
+      "source_archive": "a5-dapo-20261030/code/server.py"
+    },
+    {
+      "path": "dapo/code/runtime_env.sh",
+      "sha256": "0661ae77ce2a2874ca8885610ba5636e10408b4df367252cc8f604a27098c769",
+      "source_archive": "a5-dapo-20261030/code/runtime_env.sh"
+    },
+    {
+      "path": "dapo/code/prompt.prompt",
+      "sha256": "91788d4fb0e8d81ec17066dc122572f02a6d2ec3ed762174c7b70fcf5fdf6193",
+      "source_archive": "a5-dapo-20261030/code/prompt.prompt"
+    },
+    {
+      "path": "dapo/code/reference/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_archive": "a5-dapo-20261030/code/reference/__init__.py"
+    },
+    {
+      "path": "dapo/code/reference/grpo.py",
+      "sha256": "38211217a984cd33fb4095b7758ec11abfafa62b876657a3da9a21d599f77e83",
+      "source_archive": "a5-dapo-20261030/code/reference/grpo.py"
+    },
+    {
+      "path": "dapo/code/reference/vllm_utils.py",
+      "sha256": "139bbf8de71279ac6cdfebe4b2cc7a708f29eb40ec50ad936f06ed05846c2ca1",
+      "source_archive": "a5-dapo-20261030/code/reference/vllm_utils.py"
+    },
+    {
+      "path": "dapo/code/reference/drgrpo_grader.py",
+      "sha256": "f88b29b0e76b3c28f969cb8b2f945e01b70aed2753306445d30822a192c54ec7",
+      "source_archive": "a5-dapo-20261030/code/reference/drgrpo_grader.py"
+    },
+    {
+      "path": "dapo/code/train_dapo.py",
+      "sha256": "f711fa04da40dbe104206ac09eef8bae07c5933c45babaab0225b4fc63b0c4c3",
+      "source_archive": "a5-dapo-20261030/code/train_dapo.py"
+    },
+    {
+      "path": "dapo/code/dapo.py",
+      "sha256": "1eed913d3dc77d062a1b38511af062357fc740fd54e77c57d6053c7b2866c461",
+      "source_archive": "a5-dapo-20261030/code/dapo.py"
+    },
+    {
+      "path": "dapo/code/scoring.py",
+      "sha256": "f22fdf79dc77503f6c9562fa026dc14c454358bd3e71a8d4b63f56d706b18dbb",
+      "source_archive": "a5-dapo-20261030/code/scoring.py"
+    },
+    {
+      "path": "dapo/code/checkpoints.py",
+      "sha256": "2ce848ef2a3a0b48c95f31fd8a532d0473f37975437495752543ad2cc6c8220d",
+      "source_archive": "a5-dapo-20261030/code/checkpoints.py"
+    },
+    {
+      "path": "dapo/code/history.py",
+      "sha256": "f7512cb0b83e70f290f7b7911337c942bcd8af9cc91c7ed4de8cf8556d730854",
+      "source_archive": "a5-dapo-20261030/code/history.py"
+    },
+    {
+      "path": "dapo/code/local_checkpoint_policy.py",
+      "sha256": "b8acd0044fcfcc03770cad44d98761a5b4cc4d801637cc9fcc548102340ac156",
+      "source_archive": "a5-dapo-20261030/code/local_checkpoint_policy.py"
+    },
+    {
+      "path": "dapo/code/run_formal.py",
+      "sha256": "ca9f523e37fa8a48439ef22adebd704fb23dfb89b36743bb6bec2029e27abaa6",
+      "source_archive": "a5-dapo-20261030/code/run_formal.py"
+    },
+    {
+      "path": "dapo/code/verify_run.py",
+      "sha256": "3e059391d0a69479638b9de166cf46920b91d4252812febe7f968e0cbfa822bc",
+      "source_archive": "a5-dapo-20261030/code/verify_run.py"
+    },
+    {
+      "path": "dapo/code/report.py",
+      "sha256": "55ac8bd3422eb4fef1ec9980d9efe4501de79646dc88c3ec8a4fa18a6304aad3",
+      "source_archive": "a5-dapo-20261030/code/report.py"
+    },
+    {
+      "path": "dapo/code/test_dapo.py",
+      "sha256": "873c5a6c5cd0d91f26698178834b948b505ce8ef9e48db84882acfa3122ad4a5",
+      "source_archive": "a5-dapo-20261030/code/test_dapo.py"
+    },
+    {
+      "path": "dapo/protocol.json",
+      "sha256": "b08f447edd2d58f0ffe75b84b17fe8068e4918058b8d3410fe44e9677d8d6dc6",
+      "source_archive": "a5-dapo-20261030/protocol.json"
+    },
+    {
+      "path": "dapo/checkpoint-policy.json",
+      "sha256": "5a43b60457b7cf54bd4ed93d074bc2ec87ddc836e063c68ce8eff1599df5f8df",
+      "source_archive": "a5-dapo-20261030/checkpoint-policy.json"
+    },
+    {
+      "path": "gkd_opd/code/common.py",
+      "sha256": "2c90e7910d6b9d1055e077dfa5405b9e6517e87153785162da8e5dfd5c70738b",
+      "source_archive": "a5-opd-20261102/code/common.py"
+    },
+    {
+      "path": "gkd_opd/code/server.py",
+      "sha256": "91391f8814223d4bc3c3834d68447116099fac4fda4f05367d967d90db03ba5d",
+      "source_archive": "a5-opd-20261102/code/server.py"
+    },
+    {
+      "path": "gkd_opd/code/runtime_env.sh",
+      "sha256": "45c7da1945d8026d79cf521de0e11e81fd21cd4764ecc9811f2fae380b1eea80",
+      "source_archive": "a5-opd-20261102/code/runtime_env.sh"
+    },
+    {
+      "path": "gkd_opd/code/prompt.prompt",
+      "sha256": "91788d4fb0e8d81ec17066dc122572f02a6d2ec3ed762174c7b70fcf5fdf6193",
+      "source_archive": "a5-opd-20261102/code/prompt.prompt"
+    },
+    {
+      "path": "gkd_opd/code/reference/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_archive": "a5-opd-20261102/code/reference/__init__.py"
+    },
+    {
+      "path": "gkd_opd/code/reference/grpo.py",
+      "sha256": "38211217a984cd33fb4095b7758ec11abfafa62b876657a3da9a21d599f77e83",
+      "source_archive": "a5-opd-20261102/code/reference/grpo.py"
+    },
+    {
+      "path": "gkd_opd/code/reference/vllm_utils.py",
+      "sha256": "139bbf8de71279ac6cdfebe4b2cc7a708f29eb40ec50ad936f06ed05846c2ca1",
+      "source_archive": "a5-opd-20261102/code/reference/vllm_utils.py"
+    },
+    {
+      "path": "gkd_opd/code/reference/drgrpo_grader.py",
+      "sha256": "f88b29b0e76b3c28f969cb8b2f945e01b70aed2753306445d30822a192c54ec7",
+      "source_archive": "a5-opd-20261102/code/reference/drgrpo_grader.py"
+    },
+    {
+      "path": "gkd_opd/code/train.py",
+      "sha256": "c2359cafbb202d628aa76877523b2cf6003c928a8c8600674bfd7d3fbbb5aadf",
+      "source_archive": "a5-opd-20261102/code/train.py"
+    },
+    {
+      "path": "gkd_opd/code/gkd.py",
+      "sha256": "8fec1d3ed261c99cf12c64e50dc60fb78de237ba38c97b87453aba75331f4216",
+      "source_archive": "a5-opd-20261102/code/gkd.py"
+    },
+    {
+      "path": "gkd_opd/code/checkpoints.py",
+      "sha256": "0c490634091df057bdf26cf6664c45cd035c4e30126e536ef9cc6406c05b21a7",
+      "source_archive": "a5-opd-20261102/code/checkpoints.py"
+    },
+    {
+      "path": "gkd_opd/code/history.py",
+      "sha256": "8d8461ec43de737ad6eec114dfc2a011d2d99dc0e1acf6d16efea1a540e28783",
+      "source_archive": "a5-opd-20261102/code/history.py"
+    },
+    {
+      "path": "gkd_opd/code/run_formal.py",
+      "sha256": "812b6679db507f04fefaa51385d32a756f88e2be6a9c56285090988b9644d170",
+      "source_archive": "a5-opd-20261102/code/run_formal.py"
+    },
+    {
+      "path": "gkd_opd/code/verify_run.py",
+      "sha256": "8e122c473224c850bfa6ef8ec2ebd13451e0c0a5e30258a3c30b40ba1c3863e2",
+      "source_archive": "a5-opd-20261102/code/verify_run.py"
+    },
+    {
+      "path": "gkd_opd/code/test_gkd.py",
+      "sha256": "eb9e10d4c183469095e38e21c1c35903980e4f80308d3077220e97ca3e451b1d",
+      "source_archive": "a5-opd-20261102/code/test_gkd.py"
+    },
+    {
+      "path": "gkd_opd/code/wandb_online.py",
+      "sha256": "3e220829c76bb9c8005b34c890516c19bdfb552a6536b8264804f323c962ae36",
+      "source_archive": "a5-opd-20261102/code/wandb_online.py"
+    },
+    {
+      "path": "gkd_opd/protocol.json",
+      "sha256": "42f739163fb14bbcddd47842373b15194cda36fe97e73322e12a5230df800e9c",
+      "source_archive": "a5-opd-20261102/protocol.json"
+    },
+    {
+      "path": "gkd_opd/logging-policy.json",
+      "source_archive": "a5-opd-20261102/logging-policy.json",
+      "source_sha256": "3ce9028023e5995e58128251d2e0e20441b5440c40a445288477caa840c33803",
+      "sha256": "eb06a65d9576bd17354cf7dff61d2f14d38fe6086da324d6fd15eeeb56fe3278",
+      "export_changes": "Private deployment coordinates or obsolete artifact-transfer wording omitted; algorithm settings unchanged."
+    },
+    {
+      "path": "rl_variants/code/env-spec.json",
+      "sha256": "66682a7d8efc3ef957130b48b4a0f1cefcd44afd1e21e14ad5a774d6445bf261",
+      "source_archive": "a5-3shot-20261029/code/env-spec.json"
+    },
+    {
+      "path": "rl_variants/code/model-manifest.json",
+      "sha256": "fa531b3502e8c5cfc88cbff0e850218ce267a6a741ff35109aba31e70fa76e38",
+      "source_archive": "a5-3shot-20261029/code/model-manifest.json"
+    },
+    {
+      "path": "rl_variants/performance-policy.json",
+      "sha256": "0b45923fb17608cdab7f34fe67940249f439777256a2affcfc3b5bd0919867cf",
+      "source_archive": "a5-3shot-20261029/performance-policy.json"
+    },
+    {
+      "path": "dapo/code/env-spec.json",
+      "sha256": "66682a7d8efc3ef957130b48b4a0f1cefcd44afd1e21e14ad5a774d6445bf261",
+      "source_archive": "a5-dapo-20261030/code/env-spec.json"
+    }
+  ]
+}
