@@ -1,9 +1,0 @@
-{
-  "remote_backup_required": false,
-  "automatic_weight_sync": false,
-  "source_keep": 1,
-  "minimind_scope": "logs_only",
-  "local_rotation_authorized": true,
-  "reason": "Explicit user request: no automatic weight synchronization; automatically retain logs only",
-  "updated_at": "2026-10-30T08:35:41.564547+00:00"
-}
